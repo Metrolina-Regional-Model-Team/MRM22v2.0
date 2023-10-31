@@ -1,0 +1,23 @@
+//*********************************************************
+//	Get_Schedule_Data.cpp - read the transit schedule file
+//*********************************************************
+
+#include "TransitNet.hpp"
+
+//---------------------------------------------------------
+//	Get_Schedule_Data
+//---------------------------------------------------------
+
+bool TransitNet::Get_Schedule_Data (Schedule_File &file, Schedule_Data &sched_rec)
+{
+	if (delete_stop_flag && file.Nested ()) {
+		if (delete_stops.In_Range (file.Stop ())) return (false);
+	}
+	if (Data_Service::Get_Schedule_Data (file, sched_rec)) {
+		int route = file.Route ();
+		if (select_routes && !route_range.In_Range (route)) return (false);
+		if (delete_route_flag && delete_routes.In_Range (route)) return (false);
+		return (true);
+	}
+	return (false);
+}

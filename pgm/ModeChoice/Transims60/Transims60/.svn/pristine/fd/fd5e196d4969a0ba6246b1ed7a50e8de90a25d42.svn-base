@@ -1,0 +1,153 @@
+//*********************************************************
+//	Control.cpp - process the control parameters
+//*********************************************************
+
+#include "PlanPrep.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void PlanPrep::Program_Control (void)
+{
+	String key;
+
+	//---- initialize the MPI thread range ----
+
+	MPI_Setup ();
+
+	//---- create the network files ----
+
+	Data_Service::Program_Control ();
+
+	Read_Select_Keys ();
+
+	if (select_org_zones || select_des_zones || select_polygon || select_subareas) {
+		if (!System_File_Flag (NODE) || !System_File_Flag (LINK) || !System_File_Flag (LOCATION)) {
+			Error ("Location Data required to Select Zones or Locations");
+		}
+	}
+
+	if (System_File_Flag (PLAN)) {
+		plan_file = System_Plan_File ();
+		if (!plan_file->Part_Flag ()) Num_Threads (1);
+
+		if (System_File_Flag (NEW_PLAN)) {
+			new_plan_file = System_Plan_File (true);
+			if (Trip_Sort () == UNKNOWN_SORT) {
+				new_plan_file->Sort_Type (plan_file->Sort_Type ());
+			} else {
+				new_plan_file->Sort_Type (Trip_Sort ());
+			}
+			new_plan_file->Close ();
+			new_plan_flag = true;
+
+			if (plan_file->Part_Flag () && !new_plan_file->Part_Flag ()) {
+				pathname = new_plan_file->Pathname ();
+				new_format = new_plan_file->Dbase_Format ();
+
+				if (MPI_Size () > 1 && Master ()) {
+					pathname += ".0";
+				}
+				if (Trip_Sort () == TRAVELER_SORT || Trip_Sort () == TIME_SORT) {
+					combine_flag = true;
+					new_plan_file->File_Type ("Temporary File");
+					new_plan_file->Dbase_Format (BINARY);
+					new_plan_file->Part_Flag (true);
+					new_plan_file->Pathname (pathname + ".temp");
+				} else {
+					output_flag = true;
+					new_plan_file->Pathname (pathname);
+					if (MPI_Size () > 1) {
+						new_plan_file->Dbase_Format (BINARY);
+					}
+					Num_Threads (1);
+				}
+			}
+		}
+
+	} else if (System_File_Flag (PLAN_SKIM)) {
+		skim_flag = true;
+		skim_file = System_Plan_Skim_File ();
+	} else {
+		Error ("A Plan File or Plan Skim File is Required");
+	}
+	select_flag = System_File_Flag (SELECTION);
+
+	Print (2, String ("%s Control Keys:") % Program ());
+
+	if (!skim_flag) {
+
+		//---- merge plan file ----
+
+		key = Get_Control_Text (MERGE_PLAN_FILE);
+
+		if (!key.empty ()) {
+			merge_file.File_Type ("Merge Plan File");
+			merge_file.Filename (Project_Filename (key));
+			merge_flag = true;
+
+			key = Get_Control_String (MERGE_PLAN_FORMAT);
+			if (!key.empty ()) {
+				merge_file.Dbase_Format (key);
+			}
+			merge_file.Open (0);
+
+			if (Num_Threads () > 1 && !merge_file.Part_Flag ()) {
+				Error ("Partitioned Input Plans require Partitioned Merge Plans");
+			}
+
+			//---- merge mode flag ----
+
+			merge_mode_flag = Get_Control_Flag (MERGE_MODE_FLAG);
+		}
+
+		//---- maximum sort size ----
+
+		if (Trip_Sort () == TRAVELER_SORT || Trip_Sort () == TIME_SORT) {
+			sort_size = Get_Control_Integer (MAXIMUM_SORT_SIZE);
+		}
+
+		//---- repair plan legs ----
+
+		repair_flag = Get_Control_Flag (REPAIR_PLAN_LEGS);
+
+		if (repair_flag && !System_File_Flag (LINK)) {
+			Error ("A Link File is needed to Repair Plan Legs");
+		}
+	}
+
+	//---- constraint parking lots ----
+
+	key = Get_Control_Text (CONSTRAIN_PARKRIDE_LOTS);
+
+	if (!key.empty () && !key.Equals ("NONE")) {
+		park_list_flag = true;
+		if (!park_list.Add_Ranges (key)) {
+			Error ("Adding ParkRide Lot Ranges");
+		}
+	}
+
+	max_ratio = Get_Control_Double (MAX_PARKING_DEMAND_RATIO);
+
+	//---- constraint transit loads ----
+
+	key = Get_Control_Text (CONSTRAIN_TRANSIT_LOADS);
+
+	if (!key.empty () && !key.Equals ("NONE")) {
+		route_list_flag = true;
+		if (!route_list.Add_Ranges (key)) {
+			Error ("Adding Transit Route Ranges");
+		}
+	}
+	max_factor = Get_Control_Double (MAX_ROUTE_LOAD_FACTOR);
+
+	//---- new plan skim file ----
+
+	if (System_File_Flag (NEW_PLAN_SKIM)) {
+		plan_skim_flag = true;
+		plan_skim_file = System_Plan_Skim_File (true);
+	} else if (skim_flag) {
+		Error ("A New Plan Skim File is Required");
+	}
+}

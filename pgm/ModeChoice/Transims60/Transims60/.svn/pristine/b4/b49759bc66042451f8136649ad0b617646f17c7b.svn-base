@@ -1,0 +1,139 @@
+//*********************************************************
+//	Build_Plans.cpp - build plan templates
+//*********************************************************
+
+#include "VissimPlans.hpp"
+
+//---------------------------------------------------------
+//	Build_Plans
+//---------------------------------------------------------
+
+void VissimPlans::Build_Plans (void)
+{
+	int index, period, person, trip;
+	Dtime start, time, second;
+	Path_Itr path_itr;
+	Edge_Data *edge_ptr;
+	Int_Itr int_itr, link_itr;
+	Link_Data *link_ptr;
+	Dir_Data *dir_ptr;
+
+	Plan_Data plan;
+	Plan_Leg leg;
+
+	Show_Message (1, String ("Building %s -- Record") % new_file->File_Type ());
+	Set_Progress ();
+
+	second = Dtime (1, SECONDS);
+
+	for (path_itr = path_array.begin (); path_itr != path_array.end (); path_itr++) {
+		Show_Progress ();
+
+		plan.Clear ();
+
+		plan.Household (path_itr->path);
+		plan.Person (1);
+		plan.Tour (1);
+		plan.Trip (1);
+		plan.Start (Model_Start_Time ());
+		plan.End (Model_End_Time ());
+		plan.Duration (0);
+		plan.Origin (path_itr->origin);
+		plan.Destination (path_itr->destination);
+		plan.Purpose (1);
+		plan.Mode (DRIVE_MODE);
+		plan.Constraint (START_TIME);
+		plan.Priority (0);
+		plan.Vehicle (1);
+		plan.Veh_Type (1);
+		plan.Type (0);
+
+		plan.Depart (Model_Start_Time ());
+		plan.Arrive (Model_End_Time ());
+		plan.Activity (0);
+
+		leg.Mode (WALK_MODE);
+		leg.Type (LOCATION_ID);
+		leg.ID (plan.Origin ());
+		leg.Time (0);
+		leg.Length (0);
+		leg.Cost (0);
+		leg.Impedance (0);
+
+		plan.push_back (leg);
+
+		leg.Mode (OTHER_MODE);
+		leg.Type (PARKING_ID);
+
+		plan.push_back (leg);
+
+		leg.Mode (DRIVE_MODE);
+		leg.Type (LINK_AB);
+		index = 0;
+
+		for (int_itr = path_itr->edges.begin (); int_itr != path_itr->edges.end (); int_itr++) {
+			edge_ptr = &edge_array [*int_itr];
+
+			for (link_itr = edge_ptr->links.begin () + index; link_itr != edge_ptr->links.end (); link_itr++) {
+				link_ptr = &link_array [*link_itr];
+				dir_ptr = &dir_array [link_ptr->AB_Dir ()];
+
+				leg.ID (link_ptr->Link ());
+				leg.Time (dir_ptr->Time0 ());
+				leg.Length (link_ptr->Length ());
+				leg.Impedance (leg.Time () * 10);
+
+				plan.Add_Drive (leg.Time ());
+				plan.Add_Length (leg.Length ());
+				plan.Add_Impedance (leg.Impedance ());
+
+				plan.push_back (leg);
+			}
+			index = 1;
+		}
+		leg.Mode (OTHER_MODE);
+		leg.Type (PARKING_ID);
+		leg.ID (plan.Destination ());
+		leg.Time (0);
+		leg.Length (0);
+		leg.Cost (0);
+		leg.Impedance (0);
+
+		plan.push_back (leg);
+
+		leg.Mode (WALK_MODE);
+		leg.Type (LOCATION_ID);
+
+		plan.push_back (leg);
+
+		//---- replicate for each time step ----
+
+		start = Model_Start_Time ();
+		person = 0;
+
+		for (period=1, int_itr = path_itr->trips.begin (); int_itr != path_itr->trips.end (); int_itr++, period++) {
+			plan.Tour (period);
+
+			time = start;
+
+			for (trip=1; trip <= *int_itr; trip++, time += second) {
+				if (++person > 32767) person = 1;
+
+				plan.Person (person);
+				plan.Trip (trip);
+
+				plan.Start (time);
+				plan.End ((time + plan.Drive ()).Round_Seconds ());
+
+				plan.Depart (time);
+				plan.Arrive (plan.End ());
+
+				new_file->Write_Plan (plan);
+			}
+			start += time_periods.Increment ();
+		}
+	}
+	End_Progress ();
+
+	new_file->Close ();
+}

@@ -1,0 +1,160 @@
+//*********************************************************
+//	Read_Vissim.cpp - input VISSIM data
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+//---------------------------------------------------------
+//	Read_Vissim
+//---------------------------------------------------------
+
+void VissimNet::Read_Vissim (void)
+{
+	bool header, end_flag, network_flag;
+	String line;
+
+	Int_Map_Itr map_itr;
+	Link_Itr link_itr;
+	Shape_Data *shape_ptr;
+
+	Show_Message (1, String ("Reading %s -- Record") % input_file.File_Type ());
+	Set_Progress ();
+
+	network_flag = false;
+	header = true;
+
+	while (input_file.Read ()) {
+		Show_Progress ();
+
+		line = input_file.Record_String ();
+
+		if (line.Parse_XML (string_pairs) == 0) continue;
+
+		for (pair_itr = string_pairs.begin (); pair_itr != string_pairs.end (); pair_itr++) {
+			if (header) {
+				if (!pair_itr->first.Equals ("<?xml") || !pair_itr->second.Equals ("?>")) {
+					Error ("Input File is Not in XML Format");
+				}
+				header = false;
+				break;
+			}
+			end_flag = true;
+
+			if (pair_itr->first.Equals ("<network")) {
+				if (network_flag) Warning ("Network Block was Not Terminated");
+				network_flag = true;
+				end_flag = !pair_itr->second.Equals ("/>");
+			} else if (pair_itr->first.Equals ("</network")) {
+				if (!network_flag) Warning ("Network Block was Not Initialized");
+				network_flag = false;
+			}
+			if (network_flag) {
+
+				//---- set block flags ----
+
+				if (pair_itr->first.Equals ("<links")) {
+					if (links_flag) Warning ("Links Block was Not Terminated");
+					links_flag = true;
+				} else if (pair_itr->first.Equals ("</links")) {
+					if (!links_flag) Warning ("Links Block was Not Initialized");
+					links_flag = false;
+				} else if (pair_itr->first.Equals ("<nodes")) {
+					if (nodes_flag) Warning ("Nodes Block was Not Terminated");
+					nodes_flag = true;
+				} else if (pair_itr->first.Equals ("</nodes")) {
+					if (!nodes_flag) Warning ("Nodes Block was Not Initialized");
+					nodes_flag = false;
+				} else if (pair_itr->first.Equals ("<desSpeedDistributions")) {
+					if (speeds_flag) Warning ("Speed Distribution Block was Not Terminated");
+					speeds_flag = true;
+				} else if (pair_itr->first.Equals ("</desSpeedDistributions")) {
+					if (!speeds_flag) Warning ("Speed Distribution Block was Not Initialized");
+					speeds_flag = false;
+				} else if (pair_itr->first.Equals ("<linkBehaviorTypes")) {
+					if (types_flag) Warning ("Link Behavior Block was Not Terminated");
+					types_flag = true;
+				} else if (pair_itr->first.Equals ("</linkBehaviorTypes")) {
+					if (!types_flag) Warning ("Link Behavior Block was Not Initialized");
+					types_flag = false;
+				} else if (pair_itr->first.Equals ("<vehicleTypes")) {
+					if (veh_types_flag) Warning ("Vehicle Type Block was Not Terminated");
+					veh_types_flag = true;
+				} else if (pair_itr->first.Equals ("</vehicleTypes")) {
+					if (!veh_types_flag) Warning ("Vehicle Type Block was Not Initialized");
+					veh_types_flag = false;
+				}
+
+				//---- link processing ----
+
+				if (links_flag) {
+					if (Link_Fields ()) break;
+				}
+
+				//---- node processing ----
+
+				if (nodes_flag) {
+					if (Node_Fields ()) break;
+				}
+
+				//---- speed processing ----
+
+				if (speeds_flag) {
+					if (Speed_Fields ()) break;
+				}
+
+				//---- link behavior type processing ----
+
+				if (types_flag) {
+					if (Link_Behavior ()) break;
+				}
+
+				//---- vehicle type processing ----
+
+				if (veh_types_flag) {
+					if (Veh_Type_Fields ()) break;
+				}
+				network_flag = end_flag;
+			}
+		}
+	}
+	End_Progress ();
+
+	input_file.Close ();
+
+	//---- process link connections ----
+
+	Connections ();
+
+	//---- drop links without nodes ----
+
+	for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+		if (link_itr->Anode () < 0 || link_itr->Bnode () < 0 ||
+			link_itr->Anode () == link_itr->Bnode () || link_itr->Length () == 0) {
+
+			link_itr->Length (0);
+
+			if (link_itr->Shape () >= 0) {
+				shape_ptr = &shape_array [link_itr->Shape ()];
+				shape_ptr->clear ();
+			}
+		} else {
+			map_itr = type_map.find (link_itr->Area_Type ());
+			if (map_itr != type_map.end ()) {
+				if (map_itr->second < 0) {
+					link_itr->Type (-map_itr->second);
+					link_itr->Use (Use_Code ("BUS|HOV2+"));
+				} else {
+					link_itr->Type (map_itr->second);
+					link_itr->Use (Use_Code ("CAR|TRUCK|BUS"));
+				}
+			} else {
+				Warning (String ("Link %d Type %d was Not Defined") % link_itr->Link () % link_itr->Area_Type ());
+			}
+		}
+	}
+	Write_Nodes ();
+	Write_Links ();
+	if (System_File_Flag (NEW_SHAPE)) {
+		Write_Shapes ();
+	}
+} 

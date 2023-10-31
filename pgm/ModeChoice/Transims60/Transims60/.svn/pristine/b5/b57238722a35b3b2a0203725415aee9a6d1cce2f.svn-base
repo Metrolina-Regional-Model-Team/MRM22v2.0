@@ -1,0 +1,87 @@
+//*********************************************************
+//	Write_Plan_Skims.cpp - write a new plan skim file
+//*********************************************************
+
+#include "Data_Service.hpp"
+
+//---------------------------------------------------------
+//	Write_Plan_Skims
+//---------------------------------------------------------
+
+void Data_Service::Write_Plan_Skims (void)
+{
+	int count = 0;
+
+	Plan_Skim_File *file = System_Plan_Skim_File (true);
+
+	Trip_Map_Itr itr;
+
+	Show_Message (String ("Writing %s -- Record") % file->File_Type ());
+	Set_Progress ();
+
+	for (itr = plan_skim_map.begin (); itr != plan_skim_map.end (); itr++) {
+		Show_Progress ();
+
+		count += Put_Plan_Skim_Data (*file, plan_skim_array [itr->second]);
+	}
+	Show_Progress (count);
+	End_Progress ();
+	file->Close ();
+	
+	Print (2, String ("%s Records = %d") % file->File_Type () % count);
+}
+
+//---------------------------------------------------------
+//	Put_Plan_Skim_Data
+//---------------------------------------------------------
+
+int Data_Service::Put_Plan_Skim_Data (Plan_Skim_File &file, Plan_Skim_Data &data)
+{
+	file.Household (data.Household ());
+	file.Person (data.Person ());
+	file.Tour (data.Tour ());
+	file.Trip (data.Trip ());
+
+	file.Start (data.Start ());
+	file.End (data.End ());
+	file.Duration (data.Duration ());
+
+	file.Origin (data.Origin ());
+	file.Destination (data.Destination ());
+
+	file.Purpose (data.Purpose ());
+	file.Mode (data.Mode ());
+	file.Constraint (data.Constraint ());
+	file.Priority (data.Priority ());
+
+	file.Vehicle (data.Vehicle ());
+	file.Veh_Type (data.Veh_Type ());
+	file.Type (data.Type ());
+
+	file.Depart (data.Depart ());
+	file.Arrive (data.Arrive ());
+	file.Activity (data.Activity ());
+
+	file.Walk (data.Walk ());
+	file.Drive (data.Drive ());
+	file.Transit (data.Transit ());
+	file.Wait (data.Wait ());
+	file.Other (data.Other ());
+	file.Length (data.Length ());
+	file.Cost (data.Cost ());
+	file.Impedance (data.Impedance ());
+
+	file.Transfers (data.Transfers ());
+	file.Xfer_Wait (data.Xfer_Wait ());
+	file.Parking (data.Parking ());
+
+	if (data.Num_Legs () < 1) {
+		file.Num_Legs (1);
+	} else {
+		file.Num_Legs (data.Num_Legs ());
+	}
+	if (!file.Write ()) {
+		Error (String ("Writing %s") % file.File_Type ());
+	}
+	return (1);
+}

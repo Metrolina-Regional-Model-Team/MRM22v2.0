@@ -1,0 +1,33 @@
+Transit skim notes
+
+4/7/16
+error in reg_pprmw at transit settings (set_tnet) I also got it in pprmw_assign and pprmd_assign  on 2013 runs.  
+Transit settings - cannot find resource trsp_mode83
+
+
+
+Update drive skim matrix - 
+	writing test.ctl file - starting around line 100
+	switching // to \\ 
+		i am sure manish did this on purpose, but I can't find a reason why, I have tried the ctl file both ways
+	changing out complicated location statements (hopefully correctly)
+
+
+
+
+
+reg_opbusw
+around line 180 - "drop falg" - so what - just in list of matrices - but
+
+Documentation update
+started from 141202 - check if that is latest - only work in in transit skims
+got basics drive approach section headings
+need to add drop approach part - similar to drive, but with calls to KNR_... - 
+
+DEBUG GUIDE
+ADD debug guide to doc
+local \report\tcreport has the batch routine report generated when tcb init is started and tcb closing is hit (error)
+it is the best place to find where things went wrong
+Rule is to put init only in the jobs called by runjob - subroutine should not have an init - when counting - have to backtrack INCLUDING subs
+
+adding clear for hwyskim and drop flag

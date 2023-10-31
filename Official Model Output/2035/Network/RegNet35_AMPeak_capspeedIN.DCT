@@ -1,0 +1,56 @@
+
+382
+"ID",I,1,10,0,10,0,,"","",,"Sum",
+"Length",F,11,10,0,10,2,,"","",,"Sum",
+"Dir",S,21,2,0,2,0,,"","",,"Sum",
+"Anode",I,23,6,0,6,0,,"","",,"Blank",
+"Bnode",I,29,6,0,6,0,,"","",,"Blank",
+"funcl",I,35,8,0,8,0,,"","",,"Copy",
+"fedfuncl",C,43,2,0,2,0,,"","",,"Copy",
+"fedfunc_AQ",C,45,5,0,5,0,,"","",,"Copy",
+"lanesAB",I,50,8,0,8,0,,"","",,"Copy",
+"lanesBA",I,58,8,0,8,0,,"","",,"Copy",
+"factype",C,66,1,0,1,0,,"","",,"Copy",
+"Spdlimit",I,67,8,0,8,0,,"","Speed limit future adjusted by area type",,"Copy","Spdlimit"
+"parking",C,75,1,0,1,0,,"","Y=yes, N=no, A=noAM, P=noPM, B=nopk",,"Copy","parking"
+"Pedactivity",C,76,1,0,1,0,,"","H=high, M=median, L=low",,"Copy","Pedactivity"
+"Developden",C,77,1,0,1,0,,"","H=high, M=medium, L=low",,"Copy","Developden"
+"Drivewayden",C,78,1,0,1,0,,"","H=high, M=medium, L=low",,"Copy","Drivewayden"
+"landuse",C,79,1,0,1,0,,"","R=residential, C=commercial, I=industrial, O=open",,"Copy","landuse"
+"A_LeftLns",I,80,8,0,8,0,,"","At A Street - lanes traveling B to A (X=prohibited)",,"Blank","A_LeftLns"
+"A_ThruLns",I,88,8,0,8,0,,"","At A Street - lanes traveling B to A (X=prohibited)",,"Copy","A_ThruLns"
+"A_RightLns",I,96,8,0,8,0,,"","At A Street - lanes traveling B to A (X=prohibited)",,"Blank","A_RightLns"
+"A_Control",C,104,1,0,1,0,,"","Traffic control at A Street traveling B to A - T=thru, L=signal, S=stop, F=4way, Y=yield",,"Blank","A_Control"
+"A_Prohibit",C,105,1,0,1,0,,"","",,"Copy",
+"B_LeftLns",I,106,8,0,8,0,,"","At B Street - lanes traveling A to B ",,"Blank","B_LeftLns"
+"B_ThruLns",I,114,8,0,8,0,,"","At B Street - lanes traveling A to B",,"Copy","B_ThruLns"
+"B_RightLns",I,122,8,0,8,0,,"","At B Street - lanes traveling A to B",,"Blank","B_RightLns"
+"B_control",C,130,1,0,1,0,,"","Traffic control at B Street traveling A to B - T=thru, L=signal, S=stop, F=4way, Y=yield",,"Blank","B_control"
+"B_prohibit",C,131,1,0,1,0,,"","Turn Prohibitions for traffic traveling A to B",,"Copy",
+"State",I,132,8,0,8,0,,"","",,"Copy",
+"County",I,140,8,0,8,0,,"","",,"Copy",
+"locclass1",I,148,8,0,8,0,,"","",,"Copy",
+"locclass2",I,156,8,0,8,0,,"","",,"Copy",
+"reverselane",I,164,8,0,8,0,,"","",,"Copy",
+"reversetime",C,172,1,0,1,0,,"","",,"Copy",
+"TAZ",I,173,10,0,10,0,,"","",,"Copy",
+"cap1hrAB",R,183,10,0,10,2,,"","",,"Blank",
+"cap1hrBA",R,193,10,0,10,2,,"","",,"Blank",
+"TTPkEstAB",R,203,10,0,10,2,,"","",,"Sum",
+"TTPkEstBA",R,213,10,0,10,2,,"","",,"Sum",
+"TTPkPrevAB",R,223,10,0,10,2,,"","",,"Sum",
+"TTPkPrevBA",R,233,10,0,10,2,,"","",,"Sum",
+"TTPkAssnAB",R,243,10,0,10,2,,"","",,"Sum",
+"TTPkAssnBA",R,253,10,0,10,2,,"","",,"Sum",
+"TTPkLocAB",R,263,10,0,10,2,,"","",,"Sum",
+"TTPkLocBA",R,273,10,0,10,2,,"","",,"Sum",
+"TTPkXprAB",R,283,10,0,10,2,,"","",,"Sum",
+"TTPkXprBA",R,293,10,0,10,2,,"","",,"Sum",
+"TTPkNStAB",R,303,10,0,10,2,,"","",,"Sum",
+"TTPkNStBA",R,313,10,0,10,2,,"","",,"Sum",
+"TTPkSkSAB",R,323,10,0,10,2,,"","",,"Sum",
+"TTPkSkSBA",R,333,10,0,10,2,,"","",,"Sum",
+"PkLocLUAB",R,343,10,0,10,2,,"","",,"Sum",
+"PkLocLUBA",R,353,10,0,10,2,,"","",,"Sum",
+"PkXprLUAB",R,363,10,0,10,2,,"","",,"Sum",
+"PkXprLUBA",R,373,10,0,10,2,,"","",,"Sum",

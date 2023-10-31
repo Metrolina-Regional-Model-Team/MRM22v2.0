@@ -1,0 +1,51 @@
+﻿Build started 10/15/2014 12:15:12 PM.
+     1>Project "C:\Software\Transims60\SysLib\SysLib.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I..\include /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt Dbfile\Arcview_File.cpp Dbfile\Db_Array.cpp Dbfile\Db_Base.cpp Dbfile\Db_Field.cpp Dbfile\Db_File.cpp Dbfile\Db_Header.cpp Dbfile\Db_Matrix.cpp Dbfile\Db_Record.cpp Dbfile\Db_Status.cpp Program\Assign.cpp Program\Compile.cpp Program\Convert.cpp Program\Date_Time.cpp Program\Execute.cpp Program\Function.cpp Program\Get_Token.cpp Program\Initial_Declare.cpp Program\Initial_Map.cpp Program\Initial_Table.cpp Program\Input_Output.cpp Program\Map.cpp Program\Math.cpp Program\Print_Commands.cpp Program\Process_Command.cpp Program\Process_Token.cpp Program\Program_Code.cpp Program\Read_Value.cpp Program\Relation.cpp Program\Table.cpp Program\User_Program.cpp Projection\Projection.cpp Projection\Projection_Data.cpp Projection\Projection_Service.cpp Service\Control_Service.cpp Service\Execution_Service.cpp Service\Message_Service.cpp Service\Report_Service.cpp Service\Static_Service.cpp Utility\Barrier.cpp Utility\Best_List.cpp Utility\Buffer.cpp Utility\Compass.cpp Utility\Data_Buffer.cpp Utility\Data_Range.cpp Utility\Difference_Data.cpp Utility\Dtime.cpp Utility\Equation.cpp Utility\Equiv_Data.cpp Utility\Functions.cpp Utility\IPF_Data.cpp Utility\Random.cpp Utility\Range_Data.cpp Utility\Record_Queue.cpp Utility\Shape_Tools.cpp Utility\Smooth_Data.cpp Utility\Streams.cpp Utility\String.cpp Utility\Time_Periods.cpp Utility\Trip_Gap_Data.cpp Utility\Trip_Sum_Data.cpp Utility\Work_Queue.cpp
+         Work_Queue.cpp
+         Trip_Sum_Data.cpp
+         Trip_Gap_Data.cpp
+         Time_Periods.cpp
+         String.cpp
+         Streams.cpp
+         Smooth_Data.cpp
+         Shape_Tools.cpp
+         Record_Queue.cpp
+         Range_Data.cpp
+         Random.cpp
+         IPF_Data.cpp
+         Functions.cpp
+         Equiv_Data.cpp
+         Equation.cpp
+         Dtime.cpp
+         Difference_Data.cpp
+         Data_Range.cpp
+         Data_Buffer.cpp
+         Compass.cpp
+         Generating Code...
+         Compiling...
+         Buffer.cpp
+         Best_List.cpp
+         Barrier.cpp
+         Static_Service.cpp
+         Report_Service.cpp
+         Message_Service.cpp
+         Execution_Service.cpp
+         Control_Service.cpp
+         Projection_Service.cpp
+         Projection_Data.cpp
+         Projection.cpp
+         User_Program.cpp
+         Table.cpp
+         Relation.cpp
+         Read_Value.cpp
+         Program_Code.cpp
+         Process_Token.cpp
+         Process_Command.cpp
+         Print_Commands.cpp
+         Math.cpp
+     1>Done Building Project "C:\Software\Transims60\SysLib\SysLib.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:38.76

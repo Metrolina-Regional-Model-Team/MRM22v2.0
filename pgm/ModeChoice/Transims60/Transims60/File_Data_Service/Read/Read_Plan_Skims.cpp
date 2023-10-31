@@ -1,0 +1,86 @@
+//*********************************************************
+//	Read_Plan_Skims.cpp - Read the Plan Skim File
+//*********************************************************
+
+#include "Data_Service.hpp"
+
+//---------------------------------------------------------
+//	Read_Plan_Skims
+//---------------------------------------------------------
+
+void Data_Service::Read_Plan_Skims (Plan_Skim_File &file)
+{
+	int num;
+	Plan_Skim_Data plan_skim_rec;
+	Trip_Index trip_index;
+	Trip_Map_Stat trip_stat;
+
+	//---- store the plan skim data ----
+
+	Show_Message (String ("Reading %s -- Record") % file.File_Type ());
+	Set_Progress ();
+	
+	Initialize_Plan_Skims (file);
+
+	while (file.Read ()) {
+		Show_Progress ();
+
+		plan_skim_rec.Clear ();
+
+		if (Get_Plan_Skim_Data (file, plan_skim_rec)) {
+			plan_skim_rec.Get_Index (trip_index);
+
+			trip_stat = plan_trip_map.insert (Trip_Map_Data (trip_index, (int) plan_skim_array.size ()));
+
+			if (!trip_stat.second) {
+				Warning (String ("Duplicate Plan Skim Index = %d-%d-%d-%d") %
+					trip_index.Household () % trip_index.Person () % trip_index.Tour () % trip_index.Trip ());
+			} else {
+				plan_skim_array.push_back (plan_skim_rec);
+			}
+		}
+	}
+	End_Progress ();
+	file.Close ();
+	
+	Print (2, String ("Number of %s Records = %d") % file.File_Type () % Progress_Count ());
+
+	num = (int) plan_skim_array.size ();
+
+	if (num && num != Progress_Count ()) {
+		Print (1, String ("Number of %d Data Records = %d") % file.File_ID () % num);
+	}
+	if (num > 0) System_Data_True (PLAN_SKIM);
+}
+
+//---------------------------------------------------------
+//	Initialize_Plan_Skims
+//---------------------------------------------------------
+
+void Data_Service::Initialize_Plan_Skims (Plan_Skim_File &file)
+{
+	int percent = System_Data_Reserve (PLAN_SKIM);
+
+	if (plan_skim_array.capacity () == 0 && percent > 0) {
+		int num = file.Num_Records ();
+
+		if (percent != 100) {
+			num = (int) ((double) num * percent / 100.0);
+		}
+		if (num > 1) {
+			plan_skim_array.reserve (num);
+			if (num > (int) plan_skim_array.capacity ()) Mem_Error (file.File_ID ());
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Get_Plan_Skim_Data
+//---------------------------------------------------------
+
+bool Data_Service::Get_Plan_Skim_Data (Plan_Skim_File &file, Plan_Skim_Data &data)
+{
+	data.Put_Data (file);
+	if (data.Household () < 1) return (false);
+	return (true);
+}

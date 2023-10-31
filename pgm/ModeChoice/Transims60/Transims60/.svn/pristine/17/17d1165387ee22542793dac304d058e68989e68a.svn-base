@@ -1,0 +1,114 @@
+//*********************************************************
+//	Control.cpp - process the control parameters
+//*********************************************************
+
+#include "ArcJoin.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void ArcJoin::Program_Control (void)
+{
+	int i, j, k, num;
+	String key;
+
+	Arc_Data_Group arc_data;
+	Arc_Data_Itr arc_itr;
+	Field_Ptr fld_ptr, new_fld;
+
+	//---- create the network files ----
+
+	Data_Service::Program_Control ();
+		
+	projection.Read_Control ();
+
+	Print (2, String ("%s Control Keys:") % Program ());
+
+	//--- get the arc data files ----
+
+	num = Highest_Control_Group (ARC_DATA_FILE);
+
+	for (i = 1; i <= num; i++) {
+		key = Get_Control_String (ARC_DATA_FILE, i);
+
+		if (key.empty ()) continue;
+
+		arc_data_array.push_back (arc_data);
+
+		arc_itr = --arc_data_array.end ();
+
+		arc_itr->group = i;
+		arc_itr->file = new Arcview_File ();
+		arc_itr->data_db = new Db_Data_Array ();
+		arc_itr->file->Set_Projection (projection.Input_Projection (), projection.Output_Projection ());
+
+		Print (1);
+		arc_itr->file->File_Type (String ("Arc Data File #%d") % i);
+		arc_itr->file->File_ID (String ("ArcData%d") % i);
+
+		arc_itr->file->Open (Project_Filename (key));
+
+		arc_itr->data_db->Replicate_Fields (arc_itr->file);
+
+		arc_itr->new_field = arc_itr->field = -1;
+		arc_itr->type = false;
+	}
+
+	//---- coordinate buffer ----
+
+	buffer = Get_Control_Double (COORDINATE_BUFFER);
+
+	//---- open the new arc data file ----
+
+	key = Get_Control_String (NEW_ARC_DATA_FILE);
+
+	if (!key.empty ()) {
+		new_arc_flag = true;
+
+		for (i=0, arc_itr = arc_data_array.begin (); arc_itr != arc_data_array.end (); arc_itr++, i++) {
+			if (i == 0) {
+
+				new_arc_file.File_Type ("New Arc Data File");
+				new_arc_file.File_ID ("NewArcData");
+				new_arc_file.File_Access (CREATE);
+				new_arc_file.Shape_Type (arc_itr->file->Shape_Type ());
+				new_arc_file.Z_Flag (arc_itr->file->Z_Flag ());
+				new_arc_file.M_Flag (arc_itr->file->M_Flag ());
+
+				if (!new_arc_file.Open (Project_Filename (key))) {
+					File_Error ("Opening New Arc Data File", new_arc_file.Shape_Filename ());
+				}
+				new_arc_file.Replicate_Fields (arc_itr->file);
+			} else {
+				num = arc_itr->file->Num_Fields ();
+
+				for (j = 0; j < num; j++) {
+					fld_ptr = arc_itr->file->Field (j);
+
+					k = new_arc_file.Field_Number (fld_ptr->Name ());
+
+					if (k < 0) {
+						new_arc_file.Add_Field (fld_ptr->Name (), fld_ptr->Type (), fld_ptr->Size ());
+					} else {
+						if (arc_itr->new_field < 0) {
+							if (!fld_ptr->Name ().Equals ("OBJECTID") && !fld_ptr->Name ().Equals ("Shape_Leng")) {
+								new_fld = new_arc_file.Field (k);
+
+								if (new_fld->Type () == fld_ptr->Type ()) {
+									arc_itr->type = (new_fld->Type () == DB_STRING);
+									arc_itr->new_field = k;
+									arc_itr->field = j;
+								}
+							}
+						}
+						fld_ptr->Name ("skip");
+					}
+				}
+			}
+		}
+		new_arc_file.Write_Header ();
+
+		new_arc_file.Set_Projection (projection.Input_Projection (), projection.Output_Projection ());
+	}
+}

@@ -1,0 +1,148 @@
+//*********************************************************
+//	Read_Plans.cpp - read the plan file
+//*********************************************************
+
+#include "ModeChoice.hpp"
+
+//---------------------------------------------------------
+//	Read_Plans
+//---------------------------------------------------------
+
+void ModeChoice::Read_Plans (void)
+{
+	int i, num;
+
+	Trip_Index trip_index, min_index, index;
+	Trip_Index_Itr index_itr;
+	Plan_File_Itr plan_itr;
+	Plan_Skim_Data_Itr data_itr;
+	Plan_Data plan;
+	Plan_Array plan_array, return_array;
+	Plan_File *new_plan_file = 0;
+
+	new_plan_flag = System_File_Flag (NEW_PLAN);
+
+	if (new_plan_flag) {
+		new_plan_file = System_Plan_File (true);
+	}
+	memory_flag = false;
+
+	if (calib_flag) {
+		if (save_flag && new_plan_flag) {
+			Show_Message (String ("Iteration %d Writing Plans -- Record") % iteration);
+			skim_memory_flag = false;
+		} else {
+			Show_Message (String ("Iteration %d Reading Plans -- Record") % iteration);
+		}
+		if (iteration > 1) {
+			if (skim_memory_flag) {
+				memory_flag = true;
+				for (data_itr = plan_skim_arrays.begin (); data_itr != plan_skim_arrays.end (); data_itr++) {
+					(*data_itr)->Rewind ();
+				}
+			} else {
+				for (plan_itr = plan_files.begin (); plan_itr != plan_files.end (); plan_itr++) {
+					(*plan_itr)->Rewind ();
+				}
+			}
+		}
+	} else {
+		Show_Message ("Reading Plan Files -- Record");
+	}
+	Set_Progress ();
+
+	//---- process each trip ----
+
+	num = (int) plan_files.size ();
+
+	index_array.assign (num, trip_index);
+	plan_array.assign (num, plan);
+
+	if (tour_choice_flag) {
+		return_array.assign (num, plan);
+	}
+
+	while (trip_index.Household () < MAX_INTEGER) {
+		Show_Progress ();
+
+		//---- read the next ----
+
+		min_index.Household (MAX_INTEGER);
+
+		for (i = 0, index_itr = index_array.begin (); index_itr != index_array.end (); index_itr++, i++) {
+			if (*index_itr <= trip_index) {
+				if (memory_flag) {
+					if (plan_skim_arrays [i]->Read_Record ()) {
+						plan_skim_arrays [i]->Get_Index (*index_itr);
+						index_skims [i]->Record (plan_skim_arrays [i]->Record ());
+					} else {
+						(*index_itr).Household (MAX_INTEGER);
+					}
+				} else {
+					if (plan_files [i]->Read_Plan (plan_array [i])) {
+						plan_array [i].Get_Index (*index_itr);
+						index_skims [i]->Put_Data (plan_array [i]);
+
+						if (skim_memory_flag && !tour_choice_flag) {
+							plan_skim_arrays [i]->Record (index_skims [i]->Record ());
+							plan_skim_arrays [i]->Add_Record ();
+						}
+					} else {
+						(*index_itr).Household (MAX_INTEGER);
+					}
+				}
+			}
+			if (*index_itr < min_index) {
+				min_index = *index_itr;
+			}
+		}
+		if (min_index.Household () == MAX_INTEGER) break;
+
+		trip_index = min_index;
+
+		//---- get the return trip ----
+
+		if (tour_choice_flag && !memory_flag) {
+			for (i = 0, index_itr = index_array.begin (); index_itr != index_array.end (); index_itr++, i++) {
+				if (*index_itr == trip_index) {
+					if (plan_files [i]->Read_Plan (return_array [i])) {
+						return_array [i].Get_Index (index);
+
+						if (index.Household () == index_itr->Household () && index.Person () == index_itr->Person () &&
+							index.Tour () == index_itr->Tour () && index.Trip () == index_itr->Trip () + 1) {
+							index_skims [i]->Add_Return (return_array [i]);
+						} else {
+							*index_itr = index;
+							plan_array [i] = return_array [i];
+							index_skims [i]->Put_Data (plan_array [i]);
+						}
+					} else {
+						(*index_itr).Household (MAX_INTEGER);
+					}
+					if (skim_memory_flag && *index_itr == trip_index) {
+						plan_skim_arrays [i]->Record (index_skims [i]->Record ());
+						plan_skim_arrays [i]->Add_Record ();
+					}
+				}
+			}
+		}
+
+		//---- mode choice ----
+
+		num = Choice_Data (trip_index);
+
+		//---- save the plan ----
+
+		if (save_flag && num >= 0 && new_plan_flag) {
+			if (!new_plan_file->Write_Plan (plan_array [num])) {
+				Error ("Writing New Plan File");
+			}
+			if (tour_choice_flag) {
+				if (!new_plan_file->Write_Plan (return_array [num])) {
+					Error ("Writing New Plan File");
+				}
+			}
+		}
+	}
+	if (!calib_flag) End_Progress ();
+}

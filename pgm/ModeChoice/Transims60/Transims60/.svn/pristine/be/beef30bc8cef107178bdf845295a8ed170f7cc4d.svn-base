@@ -1,0 +1,321 @@
+//*********************************************************
+//	Connections.cpp - process connection records
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+//---------------------------------------------------------
+//	Connections
+//---------------------------------------------------------
+
+void VissimNet::Connections (void)
+{
+	int i, j, node, hi_node, index, acount, bcount;
+	bool in_lanes [20], out_lanes [20], flag;
+
+	XYZ pt;
+	Link_Itr link_itr;
+	Int_Map_Itr map_itr;
+	Node_Data node_data, *node_ptr;
+	Link_Data *link_ptr;
+	Shape_Data *shape_ptr;
+	Dir_Data *dir_ptr, *dir2_ptr;
+	Connect_Data *connect_ptr;
+	Connect_Itr connect_itr;
+	Node_Itr node_itr;
+	Zone_Itr zone_itr;
+
+	map_itr = --node_map.end ();
+	hi_node = map_itr->first + 1;
+
+	//---- add nodes to connection links ----
+
+	for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+		dir_ptr = &dir_array [link_itr->AB_Dir ()];
+
+		if (link_itr->Anode () < 0) {
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+
+			acount = 0;
+
+			for (index = dir_ptr->First_Connect (false); index >= 0; index = connect_ptr->Next_Index (false)) {
+				connect_ptr = &connect_array [index];
+
+				connect_ptr->Node (node);
+				acount++;
+
+				dir2_ptr = &dir_array [connect_ptr->Dir_Index ()];
+				link_ptr = &link_array [dir2_ptr->Link ()];
+				link_ptr->Bnode (node);
+			}
+			if (acount > 0) {
+				if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+					node_array.push_back (node_data);
+					hi_node++;
+					link_itr->Anode (node);
+				}
+			}
+		}
+		if (link_itr->Bnode () < 0) {
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+
+			bcount = 0;
+
+			for (index = dir_ptr->First_Connect (); index >= 0; index = connect_ptr->Next_Index ()) {
+				connect_ptr = &connect_array [index];
+
+				connect_ptr->Node (node);
+				bcount++;
+
+				dir2_ptr = &dir_array [connect_ptr->To_Index ()];
+				link_ptr = &link_array [dir2_ptr->Link ()];
+				link_ptr->Anode (node);
+			}
+			if (bcount > 0) {
+				if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+					node_array.push_back (node_data);
+					hi_node++;
+					link_itr->Bnode (node);
+				}
+			}
+		}
+	}
+
+	//---- repair links with the same anode and bnode ----
+
+	for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+		if (link_itr->Anode () != link_itr->Bnode ()) continue;
+
+		dir_ptr = &dir_array [link_itr->AB_Dir ()];
+
+		shape_ptr = &shape_array [link_itr->Shape ()];
+		if (shape_ptr->size () < 2) continue;
+
+		acount = bcount = 0;
+
+		for (index = dir_ptr->First_Connect (false); index >= 0; index = connect_ptr->Next_Index (false)) {
+			connect_ptr = &connect_array [index];
+			acount++;
+		}
+		for (index = dir_ptr->First_Connect (); index >= 0; index = connect_ptr->Next_Index ()) {
+			connect_ptr = &connect_array [index];
+			bcount++;
+		}
+
+		//---- drop cross-walk links ----
+
+		if (acount == 0 && bcount == 0) {
+			link_itr->Length (0);
+			link_itr->Shape (-1);
+			shape_ptr->clear ();
+			continue;
+		}
+
+		//---- replace one of the node numbers ----
+
+		if (acount <= bcount) {
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+
+			for (index = dir_ptr->First_Connect (false); index >= 0; index = connect_ptr->Next_Index (false)) {
+				connect_ptr = &connect_array [index];
+
+				connect_ptr->Node (node);
+
+				dir2_ptr = &dir_array [connect_ptr->Dir_Index ()];
+				link_ptr = &link_array [dir2_ptr->Link ()];
+				link_ptr->Bnode (node);
+			}
+			if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+				node_array.push_back (node_data);
+				hi_node++;
+				link_itr->Anode (node);
+			}
+		} else {
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+
+			for (index = dir_ptr->First_Connect (); index >= 0; index = connect_ptr->Next_Index ()) {
+				connect_ptr = &connect_array [index];
+
+				connect_ptr->Node (node);
+
+				dir2_ptr = &dir_array [connect_ptr->To_Index ()];
+				link_ptr = &link_array [dir2_ptr->Link ()];
+				link_ptr->Anode (node);
+			}
+			if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+				node_array.push_back (node_data);
+				hi_node++;
+				link_itr->Bnode (node);
+			}
+		}
+	}
+
+	//---- add connections to all lanes ----
+
+	for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+		if (link_itr->Length () == 0) continue;
+
+		dir_ptr = &dir_array [link_itr->AB_Dir ()];
+
+		memset (in_lanes, '\0', sizeof (in_lanes));
+		memset (out_lanes, '\0', sizeof (out_lanes));
+
+		acount = bcount = 0;
+
+		for (index = dir_ptr->First_Connect (false); index >= 0; index = connect_ptr->Next_Index (false)) {
+			connect_ptr = &connect_array [index];
+			for (i = connect_ptr->To_Low_Lane (); i <= connect_ptr->To_High_Lane (); i++) {
+				in_lanes [i] = true;
+			}
+			acount++;
+		}
+		for (index = dir_ptr->First_Connect (); index >= 0; index = connect_ptr->Next_Index ()) {
+			connect_ptr = &connect_array [index];
+			for (i = connect_ptr->Low_Lane (); i <= connect_ptr->High_Lane (); i++) {
+				out_lanes [i] = true;
+			}
+			bcount++;
+		}
+
+		if (acount > 0) {
+			for (j = 1; j < dir_ptr->Lanes (); j++) {
+				flag = false;
+
+				for (i = 0; i < dir_ptr->Lanes (); i++) {
+					if (in_lanes [i] == false) {
+						for (index = dir_ptr->First_Connect (false); index >= 0; index = connect_ptr->Next_Index (false)) {
+							connect_ptr = &connect_array [index];
+							if (connect_ptr->To_Low_Lane () == i + j) {
+								connect_ptr->To_Low_Lane (i);
+								in_lanes [i] = true;
+							}
+							if (connect_ptr->To_High_Lane () == i - j) {
+								connect_ptr->To_High_Lane (i);
+								in_lanes [i] = true;
+							}
+						}
+						if (in_lanes [i] == false) {
+							flag = true;
+						}
+					}
+				}
+				if (!flag) break;
+			}
+		}
+		if (bcount > 0) {
+			for (j = 1; j < dir_ptr->Lanes (); j++) {
+				flag = false;
+
+				for (i = 0; i < dir_ptr->Lanes (); i++) {
+					if (out_lanes [i] == false) {
+						for (index = dir_ptr->First_Connect (); index >= 0; index = connect_ptr->Next_Index ()) {
+							connect_ptr = &connect_array [index];
+							if (connect_ptr->Low_Lane () == i + j) {
+								connect_ptr->Low_Lane (i);
+								out_lanes [i] = true;
+							}
+							if (connect_ptr->High_Lane () == i - j) {
+								connect_ptr->High_Lane (i);
+								out_lanes [i] = true;
+							}
+						}
+						if (out_lanes [i] == false) {
+							flag = true;
+						}
+					}
+				}
+				if (!flag) break;
+			}
+		}
+	}
+
+	//---- calculate node coordinates based on connections -----
+
+	for (connect_itr = connect_array.begin (); connect_itr != connect_array.end (); connect_itr++) {
+		if (connect_itr->Node () < 0) continue;
+
+		node_ptr = &node_array [connect_itr->Node ()];
+
+		dir_ptr = &dir_array [connect_itr->Dir_Index ()];
+		link_ptr = &link_array [dir_ptr->Link ()];
+		shape_ptr = &shape_array [link_ptr->Shape ()];
+
+		pt = shape_ptr->back ();
+		
+		for (i = 0; i < dir_ptr->Lanes (); i++) {
+			node_ptr->X (node_ptr->X () + pt.x);
+			node_ptr->Y (node_ptr->Y () + pt.y);
+			node_ptr->Z (node_ptr->Z () + pt.z);
+			node_ptr->Add_Count ();
+		}
+
+		dir_ptr = &dir_array [connect_itr->To_Index ()];
+		link_ptr = &link_array [dir_ptr->Link ()];
+		shape_ptr = &shape_array [link_ptr->Shape ()];
+
+		pt = shape_ptr->front ();
+
+		for (i = 0; i < dir_ptr->Lanes (); i++) {
+			node_ptr->X (node_ptr->X () + pt.x);
+			node_ptr->Y (node_ptr->Y () + pt.y);
+			node_ptr->Z (node_ptr->Z () + pt.z);
+			node_ptr->Add_Count ();
+		}
+	}
+
+	//---- add nodes without connections ----
+
+	for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+		if (link_itr->Length () == 0) continue;
+
+		dir_ptr = &dir_array [link_itr->AB_Dir ()];
+		shape_ptr = &shape_array [link_itr->Shape ()];
+
+		if (dir_ptr->First_Connect (false) < 0) {
+			node_ptr = &node_array [link_itr->Anode ()];
+
+			pt = shape_ptr->front ();
+
+			for (i = 0; i < dir_ptr->Lanes (); i++) {
+				node_ptr->X (node_ptr->X () + pt.x);
+				node_ptr->Y (node_ptr->Y () + pt.y);
+				node_ptr->Z (node_ptr->Z () + pt.z);
+				node_ptr->Add_Count ();
+			}
+		}
+		if (dir_ptr->First_Connect () < 0) {
+			node_ptr = &node_array [link_itr->Bnode ()];
+
+			pt = shape_ptr->back ();
+
+			for (i = 0; i < dir_ptr->Lanes (); i++) {
+				node_ptr->X (node_ptr->X () + pt.x);
+				node_ptr->Y (node_ptr->Y () + pt.y);
+				node_ptr->Z (node_ptr->Z () + pt.z);
+				node_ptr->Add_Count ();
+			}
+		}
+	}
+
+	//---- averge the coordinates ----
+
+	for (node_itr = node_array.begin (); node_itr != node_array.end (); node_itr++) {
+		if (node_itr->Count () > 1) {
+			node_itr->X (UnRound (node_itr->X ()) / node_itr->Count ());
+			node_itr->Y (UnRound (node_itr->Y ()) / node_itr->Count ());
+			node_itr->Z (UnRound (node_itr->Z ()) / node_itr->Count ());
+		}
+	}
+
+	for (zone_itr = zone_array.begin (); zone_itr != zone_array.end (); zone_itr++) {
+		if (zone_itr->Area_Type () > 1) {
+			zone_itr->X (UnRound (zone_itr->X ()) / zone_itr->Area_Type ());
+			zone_itr->Y (UnRound (zone_itr->Y ()) / zone_itr->Area_Type ());
+			zone_itr->Z (UnRound (zone_itr->Z ()) / zone_itr->Area_Type ());
+		}
+	}
+} 

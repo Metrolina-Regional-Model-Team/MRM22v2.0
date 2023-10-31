@@ -1,0 +1,314 @@
+//---- Metrolina Mode Choice Script -- August 2015 ----
+
+INTEGER HBW, HBU, HBO, NHB, PEAK, OFFPEAK, PURP ENDDEF
+REAL PARK_COST, AUTO_OP, OCC3, TIME1, TIME2, TIME3,  WK_P, WK_A, CBD, Dr_Prem_Ratio, Dr_Bus_Ratio, PremIVTT_factor, WalkTime_factor, Dropoff_factor, Auto_Length, DrAcc_factor,
+		PremWait_factor, PremXfer_factor ENDDEF
+
+//---- purpose, time period and choice set codes ----
+
+HBW = 1
+HBU = 2
+HBO = 3
+NHB = 4
+
+PEAK = 1
+OFFPEAK = 2
+
+
+IF (TRIP.PURPOSE == HBW) THEN
+	PURP=1
+ELSE IF (TRIP.PURPOSE == HBU) THEN
+	PURP=2
+ELSE IF (TRIP.PURPOSE == HBO) THEN
+	PURP=3
+ELSE IF (TRIP.PURPOSE == NHB) THEN
+	PURP=4
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+
+
+//---- Premium IVTT, Walk Time and Dropoff Time Factors ----
+
+   PremWait_factor  = 1 / 1.5
+   PremXfer_factor  = 1.5 / 2.0
+IF ((PURP==1) OR (PURP==2)) THEN
+   PremIVTT_factor	= 0.006606 / -0.02202										// 0.006606 represents IVTT discount for premimum mode
+   WalkTime_factor	= -0.02202 / -0.05680										// Ratio of auto/transit to walk time values
+IF (TRIP.PERIOD == OFFPEAK) THEN
+   DrAcc_factor		= -0.05680 / -0.02202										// Ratio of Drive access time to Approach time values
+ELSE
+   DrAcc_factor		= 1															
+ENDIF
+   Dropoff_factor	= -0.05680 / -0.02202										// Ratio of Dropoff to Drive access time values
+
+ELSE IF (PURP==3) THEN
+   PremIVTT_factor	= 0.00546 / -0.01820										
+   WalkTime_factor	= -0.01820 / -0.04695										
+IF (TRIP.PERIOD == OFFPEAK) THEN
+   DrAcc_factor		= -0.04695 / -0.01820										
+ELSE
+   DrAcc_factor		= 1										
+ENDIF
+   Dropoff_factor	= -0.04695 / -0.01820	
+
+ELSE IF (PURP==4) THEN
+   PremIVTT_factor	= 0.00714 / -0.02380										
+   WalkTime_factor	= -0.02380 / -0.06139										
+IF (TRIP.PERIOD == OFFPEAK) THEN
+   DrAcc_factor		= -0.06139 / -0.02380										
+ELSE
+   DrAcc_factor		= 1										
+ENDIF
+   Dropoff_factor	= -0.06139 / -0.02380	
+ENDIF
+ENDIF
+ENDIF
+
+
+//---- CBD Flag variable ----
+
+IF ((PURP==1) OR (PURP==2)) THEN
+	WALKPREM.CBD	= 0.22020
+	DRIVEPREM.CBD 	= 0.22020
+	DROPPREM.CBD 	= 0.22020
+ELSE IF (PURP==3) THEN
+	WALKPREM.CBD	= 0.18200
+	DRIVEPREM.CBD 	= 0.18200
+	DROPPREM.CBD 	= 0.18200
+ELSE IF (PURP==4) THEN
+	WALKPREM.CBD	= 0.23800
+	DRIVEPREM.CBD 	= 0.23800
+	DROPPREM.CBD 	= 0.23800
+ENDIF
+ENDIF
+ENDIF
+	
+	
+IF (SKIM3.21 ==1) THEN
+IF ((PURP==1) OR (PURP==2)) THEN
+	WALKBUS.CBD 	= 0.13212
+ELSE IF (PURP==3) THEN
+	WALKBUS.CBD 	= 0.109200
+ELSE IF (PURP==4) THEN
+	WALKBUS.CBD 	= 0.14280
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+
+
+IF (SKIM4.21 ==1) THEN
+IF ((PURP==1) OR (PURP==2)) THEN
+	DRIVEBUS.CBD 	= 0.13212
+ELSE IF (PURP==3) THEN
+	DRIVEBUS.CBD 	= 0.109200
+ELSE IF (PURP==4) THEN
+	DRIVEBUS.CBD 	= 0.14280
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+
+
+IF (SKIM5.23 ==1) THEN
+IF ((PURP==1) OR (PURP==2)) THEN
+	DROPBUS.CBD 	= 0.13212
+ELSE IF (PURP==3) THEN
+	DROPBUS.CBD 	= 0.109200
+ELSE IF (PURP==4) THEN
+	DROPBUS.CBD 	= 0.14280
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+
+	
+//---- auto occupancy for 3+ ----
+
+OCC3 = 3.3
+
+
+//---- auto times ----intrazonal already included in Metrolina auto Skims. terminal times are included in skims.
+//---- Intrazonal times assumed to be the same for all auto modes
+
+  TIME1 = SKIM1.3																						//Non HOV Term TT includes IVTT+Terminal Time
+  TIME2 = SKIM1.7   																					//HOV Term TT includes IVTT+Terminal Time
+  TIME3 = SKIM1.7   																					//HOV Term TT includes IVTT+Terminal Time
+									
+IF (ORG.ZONE == DES.ZONE) THEN									
+  TIME2 = TIME1									
+  TIME3 = TIME1									
+ENDIF									
+									
+									
+//---- drive alone ----									
+  Auto_Length = SKIM1.2
+IF  (Auto_Length < 0) THEN
+	Auto_Length = 0
+ENDIF
+
+IF (TIME1 >= 0) THEN									
+  SOV.TIME = TIME1											
+  SOV.USER = Auto_Length																					//Auto Distance saved in USER field
+  SOV.COST = SKIM1.4 / 2.0									
+ENDIF									
+									
+//---- shared ride 2 ----									
+  Auto_Length = SKIM1.6
+IF  (Auto_Length < 0) THEN
+	Auto_Length = 0
+ENDIF
+
+IF (TIME2 >= 0) THEN									
+  POOL2.TIME = TIME2									
+  POOL2.USER = Auto_Length / 2.0																					//Auto Distance saved in USER field
+  POOL2.COST = SKIM1.9 / (2.0 * 2.0)									
+IF (SKIM1.8 < 0) THEN
+  POOL2.DIFF = SKIM1.8																	//DIFFERENCE_VALUE is negative			
+ENDIF
+ENDIF									
+									
+//---- shared ride 3+ ----									
+  Auto_Length = SKIM1.6
+IF  (Auto_Length < 0) THEN
+	Auto_Length = 0
+ENDIF
+
+IF (TIME3 >= 0) THEN									
+  POOL3.TIME = TIME3									
+  POOL3.USER = Auto_Length / OCC3																				//Auto Distance saved in USER field
+  POOL3.COST = SKIM1.9 / (2.0 * OCC3)
+IF (SKIM1.8 < 0) THEN
+ POOL3.DIFF = SKIM1.8											 //DIFFERENCE_VALUE is negative	
+ENDIF
+ENDIF
+
+
+//---- Walk ----
+IF (SKIM2.1 >= 0) THEN
+  WALK.WALK = SKIM2.1
+ENDIF
+
+
+//---- Bike ----
+IF (SKIM2.2 >= 0) THEN
+  BIKE.WALK = SKIM2.2
+ENDIF
+
+
+//---- intrazonal return ----                                                                                             
+                                                                                                                          
+IF (ORG.ZONE == DES.ZONE) THEN                                                                                            
+  TRIP.ACCESS1 = 0                                                                                                        
+  TRIP.ACCESS2 = 0                                                                                                        
+  TRIP.ACCESS3 = 1.0                                                                                                      
+  RETURN (1)                                                                                                              
+ENDIF
+
+                                                                                                                     
+//---- transit access markets ----                                                                                        
+                                                                                                                          
+WK_P = 1.00                                                                                             
+WK_A = 1.00                                                                                             
+                                                                                                                          
+TRIP.ACCESS1 = WK_P * WK_A                                                                                                
+TRIP.ACCESS2 = (1 - WK_P) * WK_A                                                                                          
+TRIP.ACCESS3 = 1 - TRIP.ACCESS1 - TRIP.ACCESS2         
+
+
+//---- Walk Access to Premium Transit ----
+IF ((SKIM3.1>=0) AND (SKIM3.3>=0) AND (SKIM3.6>=0) AND (SKIM3.7>=0)) THEN
+
+   WALKPREM.TIME	= SKIM3.1 + SKIM3.20 * PremIVTT_factor										
+   WALKPREM.WALK	= (SKIM3.6 + SKIM3.7 + SKIM3.8) * WalkTime_factor
+   WALKPREM.WAIT 	= SKIM3.5 * PremWait_factor
+   WALKPREM.COST 	= SKIM3.3
+   WALKPREM.XWAIT	= SKIM3.9 * PremXfer_factor		// XFER WAIT TIME
+   WALKPREM.TPEN 	= SKIM3.4
+   
+ENDIF
+
+      
+//---- Walk Access to Bus Transit ----
+IF ((SKIM3.10 >= 0) AND (SKIM3.12 >= 0) AND (SKIM3.15 >= 0) AND (SKIM3.16 >= 0)) THEN
+   WALKBUS.TIME		= SKIM3.10
+   WALKBUS.WALK	= (SKIM3.15 + SKIM3.16 + SKIM3.17) * WalkTime_factor
+   WALKBUS.WAIT  	= SKIM3.14
+   WALKBUS.COST 	= SKIM3.12
+   WALKBUS.XWAIT 	= SKIM3.18
+   WALKBUS.TPEN  	= SKIM3.13
+ENDIF
+
+
+//---- Drive Access to Premium Transit ----
+IF ((SKIM4.1 >= 0) AND (SKIM4.2 >= 0)) THEN
+
+IF (SKIM1.1 > 0) THEN
+   Dr_Prem_Ratio = (SKIM4.9 + SKIM4.1) / (SKIM1.1)
+ELSE Dr_Prem_Ratio = 1.0
+ENDIF
+
+IF (Dr_Prem_Ratio <= 1.2) THEN
+   DRIVEPREM.TIME	= SKIM4.1 + SKIM4.20 * PremIVTT_factor										
+ELSE IF (Dr_Prem_Ratio > 1.2) THEN
+   DRIVEPREM.TIME	= (SKIM4.1 + 60* (Dr_Prem_Ratio - 1.2)) + SKIM4.20 * PremIVTT_factor			
+ENDIF
+ENDIF
+
+   DRIVEPREM.AUTO 	= SKIM4.2 + SKIM4.6 * DrAcc_factor																// Approach Time   
+   DRIVEPREM.WAIT 	= SKIM4.5 * PremWait_factor
+   DRIVEPREM.COST 	= SKIM4.3
+   DRIVEPREM.XWAIT	= SKIM4.8 * PremXfer_factor
+   DRIVEPREM.TPEN 	= SKIM4.4
+
+ENDIF
+
+
+//---- Drive Access to Bus Transit ----
+IF ((SKIM4.10 >= 0) AND (SKIM4.11 >= 0)) THEN
+
+IF (SKIM1.1 > 0) THEN
+   Dr_Bus_Ratio = (SKIM4.18 + SKIM4.10) / (SKIM1.1)
+ELSE Dr_Bus_Ratio = 1.0
+ENDIF
+
+IF (Dr_Bus_Ratio <= 1.2) THEN
+   DRIVEBUS.TIME	= SKIM4.10
+ELSE IF (Dr_Bus_Ratio > 1.2) THEN
+   DRIVEBUS.TIME	= (SKIM4.10 + 60* (Dr_Bus_Ratio - 1.2))
+ENDIF
+ENDIF
+
+   DRIVEBUS.AUTO 	= SKIM4.11 + SKIM4.15 * DrAcc_factor
+   DRIVEBUS.WAIT 	= SKIM4.14
+   DRIVEBUS.COST 	= SKIM4.12
+   DRIVEBUS.XWAIT	= SKIM4.17
+   DRIVEBUS.TPEN 	= SKIM4.13
+ENDIF
+
+
+//---- Dropoff Access to Premium Transit ----
+IF ((SKIM5.1 >= 0) AND (SKIM5.2 >= 0) AND (SKIM5.3 >= 0)) THEN
+   DROPPREM.TIME	= SKIM5.1 + SKIM5.22 * PremIVTT_factor										
+   DROPPREM.AUTO 	= SKIM5.2 + SKIM5.6 * Dropoff_factor
+   DROPPREM.WAIT 	= SKIM5.5 * PremWait_factor
+   DROPPREM.COST 	= SKIM5.3
+   DROPPREM.XWAIT	= SKIM5.8 * PremXfer_factor
+   DROPPREM.TPEN 	= SKIM5.4
+ENDIF
+
+//---- Dropoff Access to Bus Transit ----
+IF ((SKIM5.11 >= 0) AND (SKIM5.12 >= 0) AND (SKIM5.13 >= 0)) THEN
+   DROPBUS.TIME 	= SKIM5.11
+   DROPBUS.AUTO 	= SKIM5.12 + SKIM5.16 * Dropoff_factor
+   DROPBUS.WAIT 	= SKIM5.15
+   DROPBUS.COST 	= SKIM5.13
+   DROPBUS.XWAIT 	= SKIM5.18
+   DROPBUS.TPEN 	= SKIM5.14
+ENDIF
+
+
+RETURN (1)
+

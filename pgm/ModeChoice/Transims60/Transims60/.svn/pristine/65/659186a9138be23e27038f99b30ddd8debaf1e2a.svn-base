@@ -1,0 +1,63 @@
+//*********************************************************
+//	ArcJoin.hpp - Traffic Count Processing
+//*********************************************************
+
+#ifndef ARCJOIN_HPP
+#define ARCJOIN_HPP
+
+#include "Data_Service.hpp"
+#include "Arcview_File.hpp"
+#include "Projection_Service.hpp"
+#include "Db_Header.hpp"
+#include "Db_Array.hpp"
+#include "TypeDefs.hpp"
+#include "List_Data.hpp"
+#include "Link_Data_File.hpp"
+#include "Volume_Array.hpp"
+
+//---------------------------------------------------------
+//	ArcJoin - execution class definition
+//---------------------------------------------------------
+
+class SYSLIB_API ArcJoin : public Data_Service
+{
+public:
+	ArcJoin (void);
+
+	virtual void Execute (void);
+
+protected:
+	enum CountSum_Keys { 
+		ARC_DATA_FILE = 1, COORDINATE_BUFFER, NEW_ARC_DATA_FILE,
+	};
+	virtual void Program_Control (void);
+
+private:
+	//---- arc data groups ----
+
+	typedef struct {
+		int group;
+		Arcview_File *file;
+		Db_Data_Array *data_db;
+		Points_Array shapes;
+		XY_Ranges ranges;
+		int new_field;
+		int field;
+		bool type;
+	} Arc_Data_Group;
+
+	typedef vector <Arc_Data_Group>     Arc_Data_Array;
+	typedef Arc_Data_Array::iterator    Arc_Data_Itr;
+
+	Arc_Data_Array arc_data_array;
+	Arcview_File new_arc_file;
+
+	Projection_Service projection;
+
+	bool new_arc_flag;
+	double buffer;
+
+	void Read_Arc_Data (void);
+	void Write_Arc_Data (void);
+};
+#endif

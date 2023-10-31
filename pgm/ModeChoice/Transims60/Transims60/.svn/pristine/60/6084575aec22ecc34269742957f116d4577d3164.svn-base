@@ -1,0 +1,148 @@
+//*********************************************************
+//	Connections.cpp - process connection records
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+//---------------------------------------------------------
+//	Connections
+//---------------------------------------------------------
+
+void VissimNet::Connections (void)
+{
+	int node, from, to, hi_node;
+
+	XYZ pt;
+	XYZ_Itr pt_itr;
+	Int_Map_Itr map_itr;
+	Int2_Map_Itr ab_itr;
+	Node_Data node_data;
+	Link_Data *link_ptr, *from_ptr, *to_ptr;
+	Shape_Data *shape_ptr;
+
+	map_itr = --node_map.end ();
+	hi_node = map_itr->first + 1;
+
+	//---- add nodes to connection links ----
+
+	for (ab_itr = ab_map.begin (); ab_itr != ab_map.end (); ab_itr++) {
+		map_itr = link_map.find (ab_itr->second);
+		link_ptr = &link_array [map_itr->second];
+
+		if (link_ptr->Shape () < 0) continue;
+
+		shape_ptr = &shape_array [link_ptr->Shape ()];
+		if (shape_ptr->size () < 2) continue;
+
+		from = ab_itr->first.first / 10;
+		map_itr = link_map.find (from);
+		from_ptr = &link_array [map_itr->second];
+
+		to = ab_itr->first.second / 10;
+		map_itr = link_map.find (to);
+		to_ptr = &link_array [map_itr->second];
+
+		//--- delete connectors at nodes ----
+
+		if (from_ptr->Bnode () >= 0 && to_ptr->Anode () >= 0) {
+			link_ptr->Length (0);
+
+			if (link_ptr->Shape () >= 0) {
+				shape_ptr->clear ();
+			}
+			continue;
+		} else if (link_ptr->Anode () == link_ptr->Bnode () && link_ptr->Anode () >= 0) {
+			from_ptr->Bnode (link_ptr->Anode ());
+			to_ptr->Anode (link_ptr->Bnode ());
+
+			link_ptr->Length (0);
+
+			if (link_ptr->Shape () >= 0) {
+				shape_ptr->clear ();
+			}
+			continue;
+		}
+
+		if (from_ptr->Bnode () < 0 && to_ptr->Anode () < 0 && link_ptr->Length () < 100) {
+			pt_itr = shape_ptr->begin ();
+			pt.x = pt_itr->x;
+			pt.y = pt_itr->y;
+			pt.z = pt_itr->z;
+
+			pt_itr = --shape_ptr->end ();
+			pt.x = (pt.x + pt_itr->x) / 2;
+			pt.y = (pt.y + pt_itr->y) / 2;
+			pt.z = (pt.z + pt_itr->z) / 2;
+
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+			node_data.X (pt.x);
+			node_data.Y (pt.y);
+			node_data.Z (pt.z);
+
+			if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+				node_array.push_back (node_data);
+
+				from_ptr->Bnode (node);
+				to_ptr->Anode (node);
+				hi_node++;
+			}
+			link_ptr->Length (0);
+
+			if (link_ptr->Shape () >= 0) {
+				shape_ptr->clear ();
+			}
+			continue;
+		}
+
+		if (from_ptr->Bnode () < 0) {
+			if (link_ptr->Anode () < 0) {
+				pt_itr = shape_ptr->begin ();
+				pt.x = pt_itr->x;
+				pt.y = pt_itr->y;
+				pt.z = pt_itr->z;
+
+				node = (int) node_array.size ();
+				node_data.Node (hi_node);
+				node_data.X (pt.x);
+				node_data.Y (pt.y);
+				node_data.Z (pt.z);
+
+				if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+					node_array.push_back (node_data);
+
+					link_ptr->Anode (node);
+					from_ptr->Bnode (node);
+					hi_node++;
+				}
+			} else {
+				from_ptr->Bnode (link_ptr->Anode ());
+			}
+		}
+
+		if (to_ptr->Anode () < 0) {
+			if (link_ptr->Bnode () < 0) {
+				pt_itr = --shape_ptr->end ();
+				pt.x = pt_itr->x;
+				pt.y = pt_itr->y;
+				pt.z = pt_itr->z;
+
+				node = (int) node_array.size ();
+				node_data.Node (hi_node);
+				node_data.X (pt.x);
+				node_data.Y (pt.y);
+				node_data.Z (pt.z);
+
+				if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+					node_array.push_back (node_data);
+
+					link_ptr->Bnode (node);
+					to_ptr->Anode (node);
+					hi_node++;
+				}
+			} else {
+				to_ptr->Anode (link_ptr->Bnode ());
+			}
+		}
+	}
+} 

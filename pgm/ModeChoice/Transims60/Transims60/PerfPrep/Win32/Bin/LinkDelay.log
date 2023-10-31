@@ -1,0 +1,462 @@
+﻿Build started 5/6/2014 8:30:30 AM.
+     1>Project "C:\Software\Transims60\LinkDelay\LinkDelay.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I..\Include /Zi /nologo /W4 /WX /MP /O2 /Oy- /D WIN32 /D NDEBUG /D _CONSOLE /D _USING_V110_SDK71_ /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Qpar /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Win32\Bin\\" /Fd"Win32\Bin\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt Control.cpp Execute.cpp LinkDelay.cpp Load_Transit_Data.cpp Merge_Delay.cpp Set_Min_Time.cpp Smooth_Delay.cpp
+         Control.cpp
+         Execute.cpp
+         LinkDelay.cpp
+         Load_Transit_Data.cpp
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (Load_Transit_Data.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Load_Transit_Data.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (Load_Transit_Data.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Load_Transit_Data.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (Load_Transit_Data.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Load_Transit_Data.cpp)
+     1>Load_Transit_Data.cpp(25): error C2065: 'Flow_Time_Data' : undeclared identifier
+     1>Load_Transit_Data.cpp(25): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(26): error C2065: 'Flow_Time_Array' : undeclared identifier
+     1>Load_Transit_Data.cpp(26): error C2065: 'period_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(31): error C2065: 'merge_link_array' : undeclared identifier
+     1>Load_Transit_Data.cpp(31): error C2228: left of '.Zero_Flows' must have class/struct/union
+                 type is ''unknown-type''
+     1>Load_Transit_Data.cpp(32): error C2065: 'merge_turn_array' : undeclared identifier
+     1>Load_Transit_Data.cpp(32): error C2228: left of '.Zero_Flows' must have class/struct/union
+                 type is ''unknown-type''
+     1>Load_Transit_Data.cpp(72): error C2065: 'period_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(72): error C2065: 'merge_link_array' : undeclared identifier
+     1>Load_Transit_Data.cpp(72): error C2228: left of '.Period_Ptr' must have class/struct/union
+                 type is ''unknown-type''
+     1>Load_Transit_Data.cpp(74): error C2065: 'period_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(75): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(75): error C2065: 'period_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(75): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Load_Transit_Data.cpp(77): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(83): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(85): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(85): error C2227: left of '->Add_Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Load_Transit_Data.cpp(89): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(91): error C2065: 'record_ptr' : undeclared identifier
+     1>Load_Transit_Data.cpp(91): error C2227: left of '->Add_Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+         Merge_Delay.cpp
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (LinkDelay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (LinkDelay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (LinkDelay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (LinkDelay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (LinkDelay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (LinkDelay.cpp)
+     1>LinkDelay.cpp(18): error C2065: 'LINK_DELAY' : undeclared identifier
+     1>LinkDelay.cpp(18): error C2065: 'NEW_LINK_DELAY' : undeclared identifier
+         Set_Min_Time.cpp
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (Execute.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Execute.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (Execute.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Execute.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (Execute.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Execute.cpp)
+     1>Execute.cpp(26): error C2065: 'merge_file' : undeclared identifier
+     1>Execute.cpp(26): error C2065: 'merge_link_array' : undeclared identifier
+     1>Execute.cpp(26): error C2065: 'merge_turn_array' : undeclared identifier
+     1>Execute.cpp(26): error C3861: 'Read_Link_Delays': identifier not found
+     1>Execute.cpp(35): error C2065: 'merge_link_array' : undeclared identifier
+     1>Execute.cpp(35): error C2228: left of '.Replicate' must have class/struct/union
+                 type is ''unknown-type''
+     1>Execute.cpp(35): error C2065: 'link_delay_array' : undeclared identifier
+     1>Execute.cpp(36): error C2065: 'merge_turn_array' : undeclared identifier
+     1>Execute.cpp(36): error C2228: left of '.Replicate' must have class/struct/union
+                 type is ''unknown-type''
+     1>Execute.cpp(36): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Execute.cpp(51): error C3861: 'Write_Link_Delays': identifier not found
+         Smooth_Delay.cpp
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (Control.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Control.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (Control.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Control.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (Control.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Control.cpp)
+     1>Control.cpp(19): error C2065: 'Link_Delay_File' : undeclared identifier
+     1>Control.cpp(19): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(19): error C2059: syntax error : ')'
+     1>Control.cpp(20): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(20): error C2227: left of '->Turn_Flag' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Control.cpp(29): error C2065: 'merge_file' : undeclared identifier
+     1>Control.cpp(29): error C2228: left of '.File_Type' must have class/struct/union
+                 type is ''unknown-type''
+     1>Control.cpp(33): error C2065: 'merge_file' : undeclared identifier
+     1>Control.cpp(33): error C2228: left of '.Dbase_Format' must have class/struct/union
+                 type is ''unknown-type''
+     1>Control.cpp(35): error C2065: 'merge_file' : undeclared identifier
+     1>Control.cpp(35): error C2228: left of '.Open' must have class/struct/union
+                 type is ''unknown-type''
+     1>Control.cpp(51): error C2065: 'merge_file' : undeclared identifier
+     1>Control.cpp(51): error C2228: left of '.Turn_Flag' must have class/struct/union
+                 type is ''unknown-type''
+     1>Control.cpp(54): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(54): error C2227: left of '->Turn_Flag' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Control.cpp(56): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(56): error C2065: 'Link_Delay_File' : undeclared identifier
+     1>Control.cpp(56): error C2059: syntax error : ')'
+     1>Control.cpp(58): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(58): error C2227: left of '->Clear_Fields' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Control.cpp(59): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(59): error C2227: left of '->Turn_Flag' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Control.cpp(60): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(60): error C2227: left of '->Create_Fields' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Control.cpp(61): error C2065: 'file' : undeclared identifier
+     1>Control.cpp(61): error C2227: left of '->Write_Header' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (Merge_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Merge_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (Merge_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Merge_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (Merge_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Merge_Delay.cpp)
+     1>Merge_Delay.cpp(18): error C2065: 'Flow_Time_Itr' : undeclared identifier
+     1>Merge_Delay.cpp(18): error C2146: syntax error : missing ';' before identifier 'record_itr'
+     1>Merge_Delay.cpp(18): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(19): error C2065: 'Flow_Time_Data' : undeclared identifier
+     1>Merge_Delay.cpp(19): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(20): error C2065: 'Flow_Time_Period_Itr' : undeclared identifier
+     1>Merge_Delay.cpp(20): error C2146: syntax error : missing ';' before identifier 'period_itr'
+     1>Merge_Delay.cpp(20): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(21): error C2065: 'Flow_Time_Array' : undeclared identifier
+     1>Merge_Delay.cpp(21): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(41): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(41): error C2065: 'link_delay_array' : undeclared identifier
+     1>Merge_Delay.cpp(41): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(41): error C2228: left of '.end' must have class/struct/union
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(43): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(43): error C2065: 'merge_link_array' : undeclared identifier
+     1>Merge_Delay.cpp(47): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(47): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(47): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(47): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(50): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(50): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(54): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(54): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(54): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(57): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(57): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(58): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(58): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(60): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(60): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(61): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(61): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(63): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(63): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(64): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(64): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(65): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(65): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(78): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(78): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(79): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(79): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(89): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(89): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Merge_Delay.cpp(89): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(89): error C2228: left of '.end' must have class/struct/union
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(91): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(91): error C2065: 'merge_turn_array' : undeclared identifier
+     1>Merge_Delay.cpp(95): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(95): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(95): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(95): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(98): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(98): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(102): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(102): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(102): error C2227: left of '->at' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(105): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(105): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(106): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(106): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(108): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(108): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(109): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(109): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(110): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(110): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(123): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(123): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(124): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(124): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(138): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(138): error C2065: 'link_delay_array' : undeclared identifier
+     1>Merge_Delay.cpp(138): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(138): error C2228: left of '.end' must have class/struct/union
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(142): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(142): error C2065: 'period_itr' : undeclared identifier
+     1>Merge_Delay.cpp(142): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(142): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(155): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(155): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(160): error C2065: 'record_itr' : undeclared identifier
+     1>Merge_Delay.cpp(160): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(163): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(163): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Merge_Delay.cpp(168): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(168): error C2065: 'period_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(168): error C2227: left of '->at' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(170): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(170): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Merge_Delay.cpp(171): error C2065: 'record_ptr' : undeclared identifier
+     1>Merge_Delay.cpp(171): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (Set_Min_Time.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Set_Min_Time.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (Set_Min_Time.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Set_Min_Time.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (Set_Min_Time.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Set_Min_Time.cpp)
+     1>Set_Min_Time.cpp(15): error C2065: 'Flow_Time_Itr' : undeclared identifier
+     1>Set_Min_Time.cpp(15): error C2146: syntax error : missing ';' before identifier 'record_itr'
+     1>Set_Min_Time.cpp(15): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(16): error C2065: 'Flow_Time_Data' : undeclared identifier
+     1>Set_Min_Time.cpp(16): error C2065: 'record_ptr' : undeclared identifier
+     1>Set_Min_Time.cpp(17): error C2065: 'Flow_Time_Period_Itr' : undeclared identifier
+     1>Set_Min_Time.cpp(17): error C2146: syntax error : missing ';' before identifier 'period_itr'
+     1>Set_Min_Time.cpp(17): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(19): error C2065: 'Flow_Time_Array' : undeclared identifier
+     1>Set_Min_Time.cpp(19): error C2146: syntax error : missing ';' before identifier 'min_time'
+     1>Set_Min_Time.cpp(19): error C2065: 'min_time' : undeclared identifier
+     1>Set_Min_Time.cpp(20): error C2065: 'Flow_Time_Data' : undeclared identifier
+     1>Set_Min_Time.cpp(20): error C2146: syntax error : missing ';' before identifier 'flow_time'
+     1>Set_Min_Time.cpp(20): error C2065: 'flow_time' : undeclared identifier
+     1>Set_Min_Time.cpp(27): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(27): error C2065: 'link_delay_array' : undeclared identifier
+     1>Set_Min_Time.cpp(27): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(28): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(28): error C2227: left of '->size' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(33): error C2065: 'min_time' : undeclared identifier
+     1>Set_Min_Time.cpp(33): error C2228: left of '.assign' must have class/struct/union
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(33): error C2065: 'flow_time' : undeclared identifier
+     1>Set_Min_Time.cpp(37): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(37): error C2065: 'link_delay_array' : undeclared identifier
+     1>Set_Min_Time.cpp(37): error C2228: left of '.end' must have class/struct/union
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(41): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(41): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(41): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(41): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(44): error C2065: 'record_ptr' : undeclared identifier
+     1>Set_Min_Time.cpp(44): error C2065: 'min_time' : undeclared identifier
+     1>Set_Min_Time.cpp(46): error C2065: 'record_ptr' : undeclared identifier
+     1>Set_Min_Time.cpp(46): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(46): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(47): error C2065: 'record_ptr' : undeclared identifier
+     1>Set_Min_Time.cpp(47): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(47): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(54): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(54): error C2065: 'link_delay_array' : undeclared identifier
+     1>Set_Min_Time.cpp(54): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(54): error C2228: left of '.end' must have class/struct/union
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(58): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(58): error C2065: 'period_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(58): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(58): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(61): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(61): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(62): error C2065: 'record_ptr' : undeclared identifier
+     1>Set_Min_Time.cpp(62): error C2065: 'min_time' : undeclared identifier
+     1>Set_Min_Time.cpp(63): error C2065: 'record_itr' : undeclared identifier
+     1>Set_Min_Time.cpp(63): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Set_Min_Time.cpp(63): error C2065: 'record_ptr' : undeclared identifier
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C2146: syntax error : missing ';' before identifier 'merge_file' (Smooth_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Smooth_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C2146: syntax error : missing ';' before identifier 'merge_link_array' (Smooth_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Smooth_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C2146: syntax error : missing ';' before identifier 'merge_turn_array' (Smooth_Delay.cpp)
+     1>C:\Software\Transims60\Include\LinkDelay.hpp(44): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int (Smooth_Delay.cpp)
+     1>Smooth_Delay.cpp(15): error C2065: 'Flow_Time_Itr' : undeclared identifier
+     1>Smooth_Delay.cpp(15): error C2146: syntax error : missing ';' before identifier 'record_itr'
+     1>Smooth_Delay.cpp(15): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(16): error C2065: 'Flow_Time_Data' : undeclared identifier
+     1>Smooth_Delay.cpp(16): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(17): error C2065: 'Flow_Time_Period_Itr' : undeclared identifier
+     1>Smooth_Delay.cpp(17): error C2146: syntax error : missing ';' before identifier 'period_itr'
+     1>Smooth_Delay.cpp(17): error C2065: 'period_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(18): error C2065: 'Flow_Time_Array' : undeclared identifier
+     1>Smooth_Delay.cpp(18): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(20): error C2065: 'link_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(20): error C2228: left of '.size' must have class/struct/union
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(28): error C2065: 'period_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(28): error C2065: 'link_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(28): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(30): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(30): error C2065: 'period_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(30): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(30): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(35): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(35): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(38): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(38): error C2065: 'link_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(39): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(39): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(39): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(41): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(41): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(45): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(45): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(48): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(48): error C2065: 'link_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(49): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(49): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(49): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(51): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(51): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(56): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(56): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(59): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(59): error C2065: 'link_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(60): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(60): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(60): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(62): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(62): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(66): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(66): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(69): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(69): error C2065: 'link_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(70): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(70): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(70): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(72): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(72): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(82): error C2065: 'period_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(82): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(82): error C2228: left of '.begin' must have class/struct/union
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(84): error C2065: 'period_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(84): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(84): error C2228: left of '.end' must have class/struct/union
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(89): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(89): error C2065: 'period_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(89): error C2227: left of '->begin' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(89): error C2227: left of '->end' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(94): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(94): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(97): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(97): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(98): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(98): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(98): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(100): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(100): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(104): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(104): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(107): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(107): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(108): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(108): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(108): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(110): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(110): error C2227: left of '->Flow' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(115): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(115): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(118): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(118): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(119): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(119): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(119): error C2227: left of '->Data_Ptr' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(121): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(121): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(125): error C2065: 'record_itr' : undeclared identifier
+     1>Smooth_Delay.cpp(125): error C2227: left of '->Time' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Smooth_Delay.cpp(128): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(128): error C2065: 'turn_delay_array' : undeclared identifier
+     1>Smooth_Delay.cpp(129): error C2065: 'record_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(129): error C2065: 'period_ptr' : undeclared identifier
+     1>Smooth_Delay.cpp(129): fatal error C1003: error count exceeds 100; stopping compilation
+     1>Done Building Project "C:\Software\Transims60\LinkDelay\LinkDelay.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:14.92

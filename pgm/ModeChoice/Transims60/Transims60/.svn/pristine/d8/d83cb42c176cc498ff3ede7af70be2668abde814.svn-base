@@ -1,0 +1,248 @@
+//*********************************************************
+//	Read_Drivers.cpp - read the transit driver file
+//*********************************************************
+
+#include "Data_Service.hpp"
+
+//---------------------------------------------------------
+//	Read_Drivers
+//---------------------------------------------------------
+
+void Data_Service::Read_Drivers (Driver_File &file)
+{
+	int i, num, count, last_index;
+	bool keep_flag, connect_flag;
+
+	Line_Data *line_ptr;
+	Driver_Data driver_rec;
+	Int2_Map_Itr connect_itr;
+
+	//---- store the transit driver data ----
+
+	Show_Message (String ("Reading %s -- Record") % file.File_Type ());
+	Set_Progress ();
+	
+	connect_flag = System_File_Flag (CONNECTION);
+
+	Initialize_Drivers (file);
+	count = 0;
+
+	while (file.Read (false)) {
+		Show_Progress ();
+
+		driver_rec.Clear ();
+
+		keep_flag = Get_Driver_Data (file, driver_rec);
+
+		num = file.Num_Nest ();
+		if (num > 0) driver_rec.reserve (num);
+
+		for (i=1; i <= num; i++) {
+			if (!file.Read (true)) {
+				Error (String ("Number of Link Records for Route %d") % file.Route ());
+			}
+			Show_Progress ();
+
+			Get_Driver_Data (file, driver_rec);
+		}
+		if (keep_flag) {
+			line_ptr = &line_array [driver_rec.Route ()];
+
+			if (driver_rec.Type () > 0 && line_ptr->Type () == 0) line_ptr->Type (driver_rec.Type ());
+
+			line_ptr->driver_array.swap (driver_rec);
+			count += (int) driver_rec.size ();
+		}
+	}
+	End_Progress ();
+	file.Close ();
+
+	line_array.Driver_Records (Progress_Count ());
+
+	Print (2, String ("Number of %s Records = %d") % file.File_Type () % Progress_Count ());
+
+	if (count && count != Progress_Count ()) {
+		Print (1, String ("Number of %s Data Records = %d") % file.File_ID () % count);
+	}
+	if (count > 0) System_Data_True (TRANSIT_DRIVER);
+
+	//---- check for driver path for each route ----
+		
+	if ((int) line_array.size () > 0 && (int) stop_array.size () > 0) {
+		int length, offset;
+		bool first;
+
+		Line_Itr line_itr;
+		Line_Stop_Itr stop_itr;
+		Driver_Itr driver_itr;
+		Stop_Data *stop_ptr;
+		Dir_Data *dir_ptr;
+		Link_Data *link_ptr;
+
+		for (line_itr = line_array.begin (); line_itr != line_array.end (); line_itr++) {
+			length = offset = 0;
+			first = true;
+
+			driver_itr = line_itr->driver_array.begin ();
+			if (driver_itr == line_itr->driver_array.end ()) continue;
+			last_index = -1;
+			dir_ptr = 0;
+
+			for (stop_itr = line_itr->begin(); stop_itr != line_itr->end (); stop_itr++) {
+				stop_ptr = &stop_array [stop_itr->Stop ()];
+
+				for (; driver_itr != line_itr->driver_array.end (); driver_itr++) {
+					if (*driver_itr != last_index) {
+						dir_ptr = &dir_array [*driver_itr];
+						if (connect_flag && last_index >= 0) {
+							connect_itr = connect_map.find (Int2_Key (last_index, *driver_itr));
+							if (connect_itr == connect_map.end ()) {
+								if (Transit_Connections ()) {
+									Connect_Data rec;
+									Dir_Data *in_ptr;
+
+									num = (int)connect_array.size ();
+									rec.Dir_Index (last_index);
+									rec.To_Index (*driver_itr);
+									link_ptr = &link_array [dir_ptr->Link ()];
+
+									if (dir_ptr->Dir ()) {
+										rec.Node (link_ptr->Bnode ());
+									} else {
+										rec.Node (link_ptr->Anode ());
+									}
+									rec.To_Low_Lane (dir_ptr->Left ());
+									rec.To_High_Lane (dir_ptr->Lanes () - dir_ptr->Right () - 1);
+
+									rec.Next_From (dir_ptr->First_Connect_From ());
+									dir_ptr->First_Connect_From (num);
+
+									in_ptr = &dir_array [last_index];
+									if (in_ptr->Link () == dir_ptr->Link ()) {
+										rec.Type (UTURN);
+									} else {
+										rec.Type (THRU);
+									}
+									rec.Low_Lane (in_ptr->Left ());
+									rec.High_Lane (in_ptr->Lanes () - in_ptr->Right () - 1);
+
+									rec.Next_To (in_ptr->First_Connect_To ());
+									in_ptr->First_Connect_To (num);
+
+									rec.Notes ("Transit Connection");
+
+									connect_map.insert (Int2_Map_Data (Int2_Key (last_index, *driver_itr), num));
+									connect_array.push_back (rec);
+								} else {
+									Warning (String ("Route %d Driver Links %d-%d are Not Connected") % line_itr->Route ()
+										% (link_array [dir_array [last_index].Link ()].Link ())
+										% (link_array [dir_ptr->Link ()].Link ()));
+								}
+							}
+						}
+						last_index = *driver_itr;
+					}
+					if (stop_ptr->Link_Dir () == dir_ptr->Link_Dir ()) break;
+					link_ptr = &link_array [dir_ptr->Link ()];
+					length += link_ptr->Length () - offset;
+					offset = 0;
+				}
+				if (driver_itr == line_itr->driver_array.end ()) {
+					Warning (String ("Route %d Stop %d and Driver Links are Incompatible") % line_itr->Route () % stop_ptr->Stop ());
+				}
+				if (first) {
+					first = false;
+					length = 0;
+				} else {
+					length += stop_ptr->Offset () - offset;
+					stop_itr->Length (length);
+				}
+				offset = stop_ptr->Offset ();
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Initialize_Drivers
+//---------------------------------------------------------
+
+void Data_Service::Initialize_Drivers (Driver_File &file)
+{
+	Required_File_Check (file, TRANSIT_ROUTE);
+	Required_File_Check (file, LINK);
+	Required_File_Check (file, VEHICLE_TYPE);
+}
+
+//---------------------------------------------------------
+//	Get_Driver_Data
+//---------------------------------------------------------
+
+bool Data_Service::Get_Driver_Data (Driver_File &file, Driver_Data &driver_rec)
+{
+	int route;
+
+	//---- process a header line ----
+
+	if (!file.Nested ()) {
+		int type;
+		Int_Map_Itr map_itr;
+
+		route = file.Route ();
+		if (route == 0) return (false);
+		if (file.Links () < 1) return (false);
+
+		map_itr = line_map.find (route);
+		if (map_itr == line_map.end ()) {
+			Warning (String ("Transit Route %d was Not Found") % route);
+			return (false);
+		}
+		driver_rec.Route (map_itr->second);
+
+		type = file.Type ();
+
+		driver_rec.Type (type);
+
+		if (file.SubType_Flag () && file.Version () <= 40) {
+			driver_rec.Type (VehType40_Map (type, file.SubType ()));
+		}
+		if (driver_rec.Type () > 0 && veh_type_array.size () > 0) {
+			map_itr = veh_type_map.find (driver_rec.Type ());
+			if (map_itr == veh_type_map.end ()) {
+				Warning (String ("Driver Route %d Vehicle Type %d was Not Found") % route % driver_rec.Type ());
+				return (false);
+			}
+			driver_rec.Type (map_itr->second);
+		}
+		return (true);
+	}
+
+	//---- process a link record ----
+
+	int link, dir, dir_index;
+	Link_Data *link_ptr;
+
+	link = file.Link ();
+	dir = file.Dir ();
+
+	link_ptr = Set_Link_Direction (file, link, dir);
+
+	if (link_ptr == 0) return (false);
+
+	if (dir) {
+		dir_index = link_ptr->BA_Dir ();
+	} else {
+		dir_index = link_ptr->AB_Dir ();
+	}
+	if (dir_index < 0) {
+		Line_Data *line_ptr = &line_array [driver_rec.Route ()];
+
+		route = line_ptr->Route ();
+		link = file.Link ();
+
+		Warning (String ("Route %d Link %d Direction %s was Not Found") % route % link % ((dir) ? "BA" : "AB"));
+		return (false);
+	}
+	driver_rec.push_back (dir_index);
+	return (true);
+}

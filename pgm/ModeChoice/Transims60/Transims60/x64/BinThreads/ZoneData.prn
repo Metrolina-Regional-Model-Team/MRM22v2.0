@@ -1,0 +1,26 @@
+
+	********************************************
+	|                                          |
+	|       ModeChoice - Version 6.0.12        |
+	|  Copyright 2014 by TRANSIMS Open-Source  |
+	|         Tue Jun 16 12:39:31 2015         |
+	|                                          |
+	********************************************
+
+	Control File = C:\Software\Transims60\x64\BinThreads\ZoneData.exe
+	Report File  = C:\Software\Transims60\x64\BinThreads\ZoneData.prn (Create)
+
+	Mode Choice Processing
+
+	Warning: ModeChoice has Too Many Parameters
+
+
+	Missing Control Keys:
+		ZONE_FILE
+		MODE_CHOICE_SCRIPT
+		PRIMARY_MODE_CHOICE
+
+	Tue Jun 16 12:39:31 2015
+	Error: Required Control Keys were Not Found
+
+	Tue Jun 16 12:39:31 2015 -- Process Terminated Due to Errors (0:00:00)

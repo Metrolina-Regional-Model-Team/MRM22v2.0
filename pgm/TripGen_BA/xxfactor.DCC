@@ -1,0 +1,8 @@
+
+0 header
+"STATION",I,1,10,0,10,0,,,"",,Blank,
+"PC FACTOR",R,11,10,0,10,3,,,"",,Blank,
+"COM FACTOR",R,21,10,0,10,3,,,"",,Blank,
+"MTK FACTOR",R,31,10,0,10,3,,,"",,Blank,
+"HTK FACTOR",R,41,10,0,10,3,,,"",,Blank,
+

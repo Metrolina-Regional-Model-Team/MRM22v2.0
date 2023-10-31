@@ -1,0 +1,288 @@
+
+//*********************************************************
+//	Plan_Skim_Data.hpp - travel plan skim data classes
+//*********************************************************
+
+#include "Plan_Skim_Data.hpp"
+
+#include "Data_Service.hpp"
+
+Plan_Skim_Data::Plan_Skim_Data () { }
+
+//---------------------------------------------------------
+//	Internal_IDs
+//---------------------------------------------------------
+
+bool Plan_Skim_Data::Internal_IDs (void)
+{
+	if (!Trip_Data::Internal_IDs ()) return (false);
+
+	if (parking > 0) {
+		Int_Map_Itr itr = dat->parking_map.find (parking);
+		if (itr == dat->parking_map.end ()) return (false);
+		parking = itr->second;
+	} else {
+		parking = -1;
+	}
+	return (true);
+}
+
+//---------------------------------------------------------
+//	External_IDs
+//---------------------------------------------------------
+
+bool Plan_Skim_Data::External_IDs (void)
+{
+	if (!Trip_Data::External_IDs ()) return (false);
+
+	if (parking >= 0) {
+		Parking_Data *ptr = &dat->parking_array [parking];
+		parking = ptr->Parking ();
+	} else {
+		parking = 0;
+	}
+	return (true);
+}
+
+//---------------------------------------------------------
+//  Get_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Data::Get_Data (Plan_Data &plan) 
+{
+	plan.Household (Household ());
+	plan.Person (Person ());
+	plan.Tour (Tour ());
+	if (plan.Tour () < 1) plan.Tour (1);
+	plan.Trip (Trip ());
+
+	plan.Start (Start ());
+	if (plan.Start () < 0) {
+		plan.Start (0);
+	}
+	plan.End (End ());
+	plan.Duration (Duration ());
+
+	plan.Origin (Origin ());
+	plan.Destination (Destination ());
+
+	plan.Purpose (Purpose ());
+	plan.Constraint (Constraint ());
+	plan.Priority (Priority ());
+
+	plan.Mode (Mode ());
+	plan.Vehicle (Vehicle ());
+	plan.Veh_Type (Veh_Type ());
+	plan.Type (Type ());
+
+	plan.Depart (Depart ());
+	if (plan.Depart () < 0) {
+		plan.Depart (0);
+	}
+	plan.Arrive (Arrive ());
+	plan.Activity (Activity ());
+
+	plan.Walk (Walk ());
+	plan.Drive (Drive ());
+	plan.Transit (Transit ());
+	plan.Wait (Wait ());
+	plan.Other (Other ());
+	plan.Length (Length ());
+	plan.Cost (Cost ());
+	plan.Impedance (Impedance ());
+}
+
+//---------------------------------------------------------
+//  Put_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Data::Put_Data (Plan_Data &plan) 
+{
+	Household (plan.Household ());
+	Person (plan.Person ());
+	Tour (plan.Tour ());
+	Trip (plan.Trip ());
+
+	if (plan.Start () < 0) {
+		plan.Start (0);
+	}
+	Start (plan.Start ());
+	End (plan.End ());
+	Duration (plan.Duration ());
+
+	Origin (plan.Origin ());
+	Destination (plan.Destination ());
+
+	Purpose (plan.Purpose ());
+	Mode (plan.Mode ());
+	Constraint (plan.Constraint ());
+	Priority (plan.Priority ());
+
+	if (plan.Vehicle () < 0 || plan.Veh_Type () < 0) {
+		Vehicle (0);
+		Veh_Type (0);
+	} else {
+		Vehicle (plan.Vehicle ());
+		Veh_Type (plan.Veh_Type ());
+	}
+	Type (plan.Type ());
+
+	if (plan.Depart () < 0) {
+		plan.Depart (0);
+	}
+	Depart (plan.Depart ());
+	Arrive (plan.Arrive ());
+	Activity (plan.Activity ());
+
+	Walk (plan.Walk ());
+	Drive (plan.Drive ());
+	Transit (plan.Transit ());
+	Wait (plan.Wait ());
+	Other (plan.Other ());
+	Length (exe->UnRound (plan.Length ()));
+	Cost (exe->UnRound (plan.Cost ()));
+	Impedance (plan.Impedance ());
+
+	Num_Legs (1);
+
+	int transfers = 0;
+	Dtime xwait = 0;
+	int parking = 0;
+
+	if (plan.size () > 0 && plan.Problem () == 0) {
+		Plan_Leg_Itr leg_itr;
+
+		for (leg_itr = plan.begin (); leg_itr != plan.end (); leg_itr++) {
+			if (leg_itr->Type () == ROUTE_ID) {
+				transfers++;
+				if (transfers > 1) {
+					xwait += leg_itr->Time ();
+				}
+			} else if (leg_itr->Type () == PARKING_ID) {
+				parking = leg_itr->ID ();
+			}
+		}
+		if (transfers > 0) transfers--;
+	}
+	Transfers (transfers);
+	Xfer_Wait (xwait);
+	Parking (parking);
+}
+
+//---------------------------------------------------------
+//  Put_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Data::Put_Data (Plan_Skim_Base &file) 
+{
+	Household (file.Household ());
+	Person (file.Person ());
+	Tour (file.Tour ());
+	Trip (file.Trip ());
+
+	Start (file.Start ());
+	End (file.End ());
+	Duration (file.Duration ());
+
+	Origin (file.Origin ());
+	Destination (file.Destination ());
+
+	Purpose (file.Purpose ());
+	Mode (file.Mode ());
+	Constraint (file.Constraint ());
+	Priority (file.Priority ());
+
+	Vehicle (file.Vehicle ());
+	Veh_Type (file.Veh_Type ());
+	Type (file.Type ());
+
+	Depart (file.Depart ());
+	Arrive (file.Arrive ());
+	Activity (file.Activity ());
+
+	Walk (file.Walk ());
+	Drive (file.Drive ());
+	Transit (file.Transit ());
+	Wait (file.Wait ());
+	Other (file.Other ());
+	Length (file.Length ());
+	Cost (file.Cost ());
+	Impedance (file.Impedance ());
+
+	Transfers (file.Transfers ());
+	Xfer_Wait (file.Xfer_Wait ());
+	Parking (file.Parking ());
+
+	Num_Legs (file.Num_Legs ());
+	if (Num_Legs () < 1) Num_Legs (1);
+}
+
+//---------------------------------------------------------
+//  Add_Leg
+//---------------------------------------------------------
+
+void Plan_Skim_Data::Add_Leg (Plan_Data &plan) 
+{
+	Duration (plan.Start () - End ());
+	Activity (plan.Depart () - Arrive ());
+
+	Walk (Walk () + plan.Walk ());
+	Drive (Drive () + plan.Drive ());
+	Transit (Transit () + plan.Transit ());
+	Wait (Wait () + plan.Wait ());
+	Other (Other () + plan.Other ());
+	Length (Length () + exe->UnRound (plan.Length ()));
+	Cost (Cost () + exe->UnRound (plan.Cost ()));
+	Impedance (Impedance () + plan.Impedance ());
+
+	int transfers = 0;
+	Dtime xwait = 0;
+
+	if (plan.size () > 0 && plan.Problem () == 0 && plan.Mode () == TRANSIT_MODE ||
+		plan.Mode () == PNR_IN_MODE || plan.Mode () == PNR_OUT_MODE ||
+		plan.Mode () == KNR_IN_MODE || plan.Mode () == KNR_OUT_MODE) {
+
+		Plan_Leg_Itr leg_itr;
+
+		for (leg_itr = plan.begin (); leg_itr != plan.end (); leg_itr++) {
+			if (leg_itr->Type () == ROUTE_ID) {
+				transfers++;
+				if (transfers > 1) {
+					xwait += leg_itr->Time ();
+				}
+			}
+		}
+		transfers--;
+	}
+	Transfers (Transfers () + transfers);
+	Xfer_Wait (Xfer_Wait () + xwait);
+	Num_Legs (Num_Legs () + 1);
+}
+
+//---------------------------------------------------------
+//  Add_Leg
+//---------------------------------------------------------
+
+void Plan_Skim_Data::Add_Leg (Plan_Skim_Base &file) 
+{
+	Duration (file.Start () - End ());
+	Activity (file.Depart () - Arrive ());
+
+	Walk (Walk () + file.Walk ());
+	Drive (Drive () + file.Drive ());
+	Transit (Transit () + file.Transit ());
+	Wait (Wait () + file.Wait ());
+	Other (Other () + file.Other ());
+	Length (Length () + file.Length ());
+	Cost (Cost () + file.Cost ());
+	Impedance (Impedance () + file.Impedance ());
+
+	Transfers (Transfers () + file.Transfers ());
+	Xfer_Wait (Xfer_Wait () + file.Xfer_Wait ());
+
+	if (file.Num_Legs () > 1) {
+		Num_Legs (Num_Legs () + file.Num_Legs ());
+	} else {
+		Num_Legs (Num_Legs () + 1);
+	}
+}

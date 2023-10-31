@@ -1,0 +1,28 @@
+
+	********************************************
+	|                                          |
+	|         NetMerge - Version 6.0.1         |
+	|  Copyright 2014 by TRANSIMS Open-Source  |
+	|         Mon Mar 16 17:01:25 2015         |
+	|                                          |
+	********************************************
+
+	Control File = C:\TRANSIMS\Transims60\x64\BinThreads\PlanCompare.exe
+	Report File  = C:\TRANSIMS\Transims60\x64\BinThreads\PlanCompare.prn (Create)
+
+	Merge Two Networks
+
+
+	Missing Control Keys:
+		NODE_FILE
+		LINK_FILE
+		NEW_NODE_FILE
+		NEW_LINK_FILE
+		MERGE_NODE_FILE
+		MERGE_LINK_FILE
+		MERGE_LOCATION_FILE
+
+	Mon Mar 16 17:01:25 2015
+	Error: Required Control Keys were Not Found
+
+	Mon Mar 16 17:01:25 2015 -- Process Terminated Due to Errors (0:00:00)

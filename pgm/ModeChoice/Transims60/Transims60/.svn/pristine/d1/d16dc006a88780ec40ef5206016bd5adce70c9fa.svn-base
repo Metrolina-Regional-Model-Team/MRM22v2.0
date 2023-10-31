@@ -1,0 +1,207 @@
+//*********************************************************
+//	Read_Plans.cpp - read the plan file
+//*********************************************************
+
+#include "ModeChoice.hpp"
+
+//---------------------------------------------------------
+//	Read_Plans
+//---------------------------------------------------------
+
+void ModeChoice::Read_Plans (void)
+{
+	int i, num, org, des, o1, d1, org_seg, des_seg, segment, choice;
+	bool first, new_plan_flag;
+
+	Trip_Index trip_index, min_index;
+	Trip_Index_Array index_array;
+	Trip_Index_Itr index_itr;
+	Plan_File_Itr plan_itr;
+	Plan_Data plan;
+	Plan_Array plan_array;
+	Location_Data *loc_ptr;
+	Zone_Data *zone_ptr;
+	Int_Map_Itr map_itr;
+	Int2_Map_Itr map2_itr;
+	Plan_File *new_plan_file = 0;
+
+	new_plan_flag = System_File_Flag (NEW_PLAN);
+
+	if (new_plan_flag) {
+		new_plan_file = System_Plan_File (true);
+	}
+
+	if (calib_flag) {
+		if (save_flag && new_plan_flag) {
+			Show_Message (String ("Iteration %d Writing Plans -- Record") % iteration);
+		} else {
+			Show_Message (String ("Iteration %d Reading Plans -- Record") % iteration);
+		}
+		if (iteration > 1) {
+			Plan_File_Itr itr;
+
+			for (itr = plan_files.begin (); itr != plan_files.end (); itr++) {
+				(*itr)->Rewind ();
+			}
+		}
+	} else {
+		Show_Message ("Reading Plan Files -- Record");
+	}
+	Set_Progress ();
+
+	//---- process each trip ----
+
+	num = (int) plan_files.size ();
+	choice = 0;
+
+	index_array.assign (num, trip_index);
+	plan_array.assign (num, plan);
+
+	while (trip_index.Household () < MAX_INTEGER) {
+		Show_Progress ();
+
+		//---- read the next ----
+
+		min_index.Household (MAX_INTEGER);
+
+		for (i = 0, index_itr = index_array.begin (); index_itr != index_array.end (); index_itr++, i++) {
+			if (*index_itr <= trip_index) {
+				if (plan_files [i]->Read_Plan (plan_array [i])) {
+					plan_array [i].Get_Index (*index_itr);
+				} else {
+					(*index_itr).Household (MAX_INTEGER);
+				}
+			}
+			if (*index_itr < min_index) {
+				min_index = *index_itr;
+			}
+		}
+		if (min_index.Household () == MAX_INTEGER) break;
+
+		if (trip_index.Household () != min_index.Household () || trip_index.Person () != min_index.Person () ||
+			trip_index.Tour () != min_index.Tour ()) {
+			choice = 0;
+		}
+		trip_index = min_index;
+
+		//---- set the plan skim records ----
+
+		first = true;
+
+		for (i = 0, index_itr = index_array.begin (); index_itr != index_array.end (); index_itr++, i++) {
+			if (*index_itr == trip_index) {
+				plan_skims [i]->Put_Data (plan_array [i]);
+
+				if (first) {
+					first = false;
+					trip_file.Put_Data (plan_array [i]);
+				}
+			} else {
+				plan_skims [i]->Zero_Data ();
+			}
+		}
+
+		//---- get the origin zone data ----
+
+		org = trip_file.Origin ();
+
+		map_itr = location_map.find (org);
+
+		if (map_itr == location_map.end ()) {
+			Warning (String ("Origin Location %d was Not Found") % org);
+			continue;
+		}
+		loc_ptr = &location_array [map_itr->second];
+
+		if (loc_ptr->Zone () < 0) {
+			Warning (String ("Origin Location %d is not in a Zone") % org);
+			continue;
+		}
+		o1 = loc_ptr->Zone ();
+
+		zone_ptr = &zone_array [o1];
+
+		org = zone_ptr->Zone ();
+
+		if (select_org_zones && !org_zone_range.In_Range (org)) continue;
+
+		org_db.Read_Record (org);
+
+		if (org_map_field >= 0) {
+			org_seg = org_db.Get_Integer (org_map_field);
+		}
+
+		//---- get the destination zone data ----
+
+		des = trip_file.Destination ();
+
+		map_itr = location_map.find (des);
+
+		if (map_itr == location_map.end ()) {
+			Warning (String ("Destination Location %d was Not Found") % des);
+			continue;
+		}
+		loc_ptr = &location_array [map_itr->second];
+
+		if (loc_ptr->Zone () < 0) {
+			Warning (String ("Destination Location %d is not in a Zone") % des);
+			continue;
+		}
+		d1 = loc_ptr->Zone ();
+		zone_ptr = &zone_array [d1];
+
+		des = zone_ptr->Zone ();
+
+		if (select_des_zones && !des_zone_range.In_Range (des)) continue;
+
+		des_db.Read_Record (des);
+
+		if (segment_flag && des_map_field >= 0) {
+			des_seg = des_db.Get_Integer (des_map_field);
+
+			map2_itr = segment_map.find (Int2_Key (org_seg, des_seg));
+
+			if (map2_itr != segment_map.end ()) {
+				segment = map2_itr->second;
+			} else {
+				segment = 0;
+			}
+			trip_file.Put_Field (segment_field, segment);
+		}
+		trip_file.Put_Field (model_field, 1);
+		trip_file.Put_Field (choice_field, choice);
+
+		//---- mode choice ----
+
+		num = Mode_Splits (0, o1, d1, org, des);
+
+		if (num > 0) {
+			choice = trip_file.Get_Integer (choice_field);
+		}
+
+		//---- save the plan ----
+
+		if (save_flag && num > 0 && (new_plan_flag || new_skim_flag)) {
+			map_itr = plan_num_map.find (num);
+
+			if (map_itr == plan_num_map.end ()) {
+				Warning (String ("Plan Number %d was Not Provided") % num);
+				continue;
+			}
+			num = map_itr->second;
+
+			if (new_plan_flag) {
+				if (!new_plan_file->Write_Plan (plan_array [num])) {
+					Error ("Writing New Plan File");
+				}
+			}
+			if (new_skim_flag) {
+				new_plan_skim.Put_Data (*(plan_skims [num]));
+				if (!new_plan_skim.Write ()) {
+					Error ("Writing New Plan Skim File");
+				}
+			}
+		}
+	}
+	if (!calib_flag) End_Progress ();
+}

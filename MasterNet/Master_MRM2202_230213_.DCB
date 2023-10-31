@@ -1,0 +1,12 @@
+MetroRoads
+61
+"ID",I,1,4,0,10,0,,"","",,"Sum",
+"ID:1",I,5,4,0,10,0,,"","",,"Blank",
+"Parknride",I,9,4,0,10,0,,"","",,"Blank",
+"Centroid",I,13,4,0,8,0,,"","",,"Blank",
+"External Station",I,17,4,0,10,0,,"","",,"Blank",
+"StationTAZ",I,21,4,0,10,0,,"","",,"Blank",
+"Station",I,25,4,0,10,0,,"","",,"Blank",
+"StaName",C,29,25,0,25,0,,"","",,"Blank",
+"dropoff",I,54,4,0,10,0,,"","",,"Blank",
+"Signal",I,58,4,0,10,0,,"","Signalized Intersection (Binary 1/0)",,"Blank",

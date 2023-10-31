@@ -1,0 +1,83 @@
+//*********************************************************
+//	Parking_Access.cpp - Connect Park and Ride Lots
+//*********************************************************
+
+#include "TransitNet.hpp"
+
+//---------------------------------------------------------
+//	Parking_Access
+//---------------------------------------------------------
+
+void TransitNet::Parking_Access (void)
+{
+	int pnr_access, speed, index;
+	double dx, dy, distance;
+	Dtime time;
+	String notes;
+
+	Int_Map_Itr map_itr;
+	Link_Data *link_ptr;
+	Parking_Itr park_itr;
+	Access_Data access_rec;
+	Points points;
+	XYZ_Point pt;
+	Stop_Data *stop_ptr;
+	Point_Map_Itr pt_itr;
+
+	//---- process the park and ride lots ----
+
+	Show_Message ("Park and Ride Access -- Record");
+	Set_Progress ();
+	Print (1);
+
+	pnr_access = 0;
+	speed = (int) Internal_Units (3.0, MPH);
+
+	for (index=0, park_itr = parking_array.begin (); park_itr != parking_array.end (); park_itr++, index++) {
+		if (park_itr->Type () != PARKRIDE) continue;
+		Show_Progress ();
+
+		link_ptr = &link_array [park_itr->Link ()];
+
+		Link_Shape (link_ptr, park_itr->Dir (), points, UnRound (park_itr->Offset ()), 0.0);
+
+		pt = points [0];
+
+		for (pt_itr = stop_pt.begin (); pt_itr != stop_pt.end (); pt_itr++) {
+			dx = pt_itr->second.x - pt.x;
+			dy = pt_itr->second.y - pt.y;
+
+			distance = sqrt (dx * dx + dy * dy);
+
+			if (distance <= PNR_distance) {
+				map_itr = stop_map.find (pt_itr->first);
+
+				if (map_itr != stop_map.end ()) {
+					if (stop_type_flag) {
+						stop_ptr = &stop_array [map_itr->second];
+						if (!pnr_stop_flag [stop_ptr->Type ()]) continue;
+					}
+					time.Seconds (Round (distance) / speed);
+
+					access_rec.Link (++max_access);
+					access_rec.From_Type (PARKING_ID);
+					access_rec.From_ID (index);
+					access_rec.To_Type (STOP_ID);
+					access_rec.To_ID (map_itr->second);
+					access_rec.Dir (2);
+					access_rec.Time (time);
+					access_rec.Cost (0);
+					access_rec.Notes ("PNR Access");
+
+					access_map.insert (Int_Map_Data (access_rec.Link (), (int) access_array.size ()));
+					access_array.push_back (access_rec);
+					pnr_access++;
+					naccess++;
+				}
+			}
+		}
+	}
+	End_Progress ();
+
+	Print (1, "Number of Park and Ride Access Links = ") << pnr_access;
+}

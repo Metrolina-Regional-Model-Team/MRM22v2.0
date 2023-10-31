@@ -1,0 +1,175 @@
+//******************************************************** 
+//	Plan_Skim_File.hpp - Plan Skim_File Input/Output
+//********************************************************
+
+#ifndef PLAN_SKIM_FILE_HPP
+#define PLAN_SKIM_FILE_HPP
+
+#include "Db_Header.hpp"
+#include "Plan_Data.hpp"
+#include "Partition_Files.hpp"
+#include "Db_Array.hpp"
+
+//---------------------------------------------------------
+//	Plan_Skim_Base Class definition
+//---------------------------------------------------------
+
+class SYSLIB_API Plan_Skim_Base
+{
+public:
+	Plan_Skim_Base ();
+
+	void Set_Base_File (Db_Base *_base)   { base = _base; Setup (); }
+
+	//---- get/put functions ----
+
+	void Get_Data (Plan_Data &plan);
+	void Put_Data (Plan_Data &plan);
+	void Put_Data (Plan_Skim_Base &file);
+	void Add_Leg (Plan_Data &plan);
+	void Add_Leg (Plan_Skim_Base &file);
+	void Zero_Data (void);
+
+	void Get_Index (Trip_Index &index);
+	void Get_Index (Time_Index &index);
+
+	int    Household (void)           { return (base->Get_Integer (hhold)); }
+	int    Person (void)              { return (base->Get_Integer (person)); }
+	int    Tour (void)                { return (base->Get_Integer (tour)); }
+	int    Trip (void)                { return (base->Get_Integer (trip)); }
+	Dtime  Start (void)               { return (base->Get_Time (start)); }
+	Dtime  End (void)                 { return (base->Get_Time (end)); }
+	Dtime  Duration (void)            { return (base->Get_Time (duration)); }
+	int    Origin (void)              { return (base->Get_Integer (origin)); }
+	int    Destination (void)         { return (base->Get_Integer (destination)); }
+	int    Purpose (void)             { return (base->Get_Integer (purpose)); }
+	int    Mode (void)                { return (base->Get_Integer (mode)); }
+	int    Constraint (void)          { return (base->Get_Integer (constraint)); }
+	int    Priority (void)            { return (base->Get_Integer (priority)); }
+	int    Vehicle (void)             { return (base->Get_Integer (vehicle)); }
+	int    Veh_Type (void)            { return (base->Get_Integer (veh_type)); }
+	int    Type (void)                { return (base->Get_Integer (type)); }
+	Dtime  Depart (void)              { return (base->Get_Time (depart)); }
+	Dtime  Arrive (void)              { return (base->Get_Time (arrive)); }
+	Dtime  Activity (void)            { return (base->Get_Time (activity)); }
+	Dtime  Walk (void)                { return (base->Get_Time (walk)); }
+	Dtime  Drive (void)               { return (base->Get_Time (drive)); }
+	Dtime  Transit (void)             { return (base->Get_Time (transit)); }
+	Dtime  Wait (void)                { return (base->Get_Time (wait)); }
+	Dtime  Other (void)               { return (base->Get_Time (other)); }
+	double Length (void)              { return (base->Get_Double (length)); }
+	double Cost (void)                { return (base->Get_Double (cost)); }
+	int    Impedance (void)           { return (base->Get_Integer (impedance)); }
+	int    Transfers (void)           { return (base->Get_Integer (transfers)); }
+	Dtime  Xfer_Wait (void)           { return (base->Get_Time (xwait)); }
+	int    Parking (void)             { return (base->Get_Integer (parking)); }
+	int    Num_Legs (void)            { return (base->Get_Integer (num_legs)); }
+
+	void   Household (int value)      { base->Put_Field (hhold, value); }
+	void   Person (int value)         { base->Put_Field (person, value); }
+	void   Tour (int value)           { base->Put_Field (tour, value); }
+	void   Trip (int value)           { base->Put_Field (trip, value); }
+	void   Start (Dtime value)        { base->Put_Field (start, value); }
+	void   End (Dtime value)          { base->Put_Field (end, value); }
+	void   Duration (Dtime value)     { base->Put_Field (duration, value); }
+	void   Origin (int value)         { base->Put_Field (origin, value); }
+	void   Destination (int value)    { base->Put_Field (destination, value); }
+	void   Purpose (int value)        { base->Put_Field (purpose, value); }
+	void   Mode (int value)           { base->Put_Field (mode, value); }
+	void   Constraint (int value)     { base->Put_Field (constraint, value); }
+	void   Priority (int value)       { base->Put_Field (priority, value); }
+	void   Vehicle (int value)        { base->Put_Field (vehicle, value); }
+	void   Veh_Type (int value)       { base->Put_Field (veh_type, value); }
+	void   Type (int value)           { base->Put_Field (type, value); }
+	void   Depart (Dtime value)       { base->Put_Field (depart, value); }
+	void   Arrive (Dtime value)       { base->Put_Field (arrive, value); }
+	void   Activity (Dtime value)     { base->Put_Field (activity, value); }
+	void   Walk (Dtime value)         { base->Put_Field (walk, value); }
+	void   Drive (Dtime value)        { base->Put_Field (drive, value); }
+	void   Transit (Dtime value)      { base->Put_Field (transit, value); }
+	void   Wait (Dtime value)         { base->Put_Field (wait, value); }
+	void   Other (Dtime value)        { base->Put_Field (other, value); }
+	void   Length (double value)      { base->Put_Field (length, value); }
+	void   Cost (double value)        { base->Put_Field (cost, value); }
+	void   Impedance (int value)      { base->Put_Field (impedance, value); }
+	void   Transfers (int value)      { base->Put_Field (transfers, value); }
+	void   Xfer_Wait (Dtime value)    { base->Put_Field (xwait, value); }
+	void   Parking (int value)        { base->Put_Field (parking, value); }
+	void   Num_Legs (int value)       { base->Put_Field (num_legs, value); }
+
+	virtual bool Create_Fields (void);
+
+protected:
+	virtual bool Set_Field_Numbers (void);
+
+	void Setup (void);
+
+private:
+	int hhold, person, tour, trip, start, end, duration, origin, destination, purpose, mode;
+	int constraint, priority, vehicle, veh_type, type, transfers, xwait, parking, num_legs;
+	int depart, arrive, activity, walk, drive, transit, wait, other, length, cost, impedance;
+
+	Db_Base *base;
+};
+
+//---------------------------------------------------------
+//	Plan_Skim_File Class definition
+//---------------------------------------------------------
+
+class SYSLIB_API Plan_Skim_File : public Db_Header, public Plan_Skim_Base
+{
+public:
+	Plan_Skim_File (Access_Type access, string format);
+	Plan_Skim_File (string filename, Access_Type access, string format);
+	Plan_Skim_File (Access_Type access = READ, Format_Type format = DEFAULT_FORMAT);
+	Plan_Skim_File (string filename, Access_Type access = READ, Format_Type format = DEFAULT_FORMAT);
+
+	virtual bool Create_Fields (void)         { return (Plan_Skim_Base::Create_Fields ()); }
+
+protected:
+	virtual bool Set_Field_Numbers (void)     {	return (Plan_Skim_Base::Set_Field_Numbers ());	}
+};
+
+typedef Plan_Skim_File *                    Plan_Skim_File_Ptr;
+typedef Pointer_Array <Plan_Skim_File_Ptr>  Plan_Skim_File_Array;
+typedef Plan_Skim_File_Array::iterator      Plan_Skim_File_Itr;
+
+//---------------------------------------------------------
+//	Plan_Skim_Data_Array Class definition
+//---------------------------------------------------------
+
+class SYSLIB_API Plan_Skim_Data_Array : public Db_Data_Array, public Plan_Skim_Base
+{
+public:
+	Plan_Skim_Data_Array ()  { Set_Base_File (this); }
+
+	virtual bool Create_Fields (void)         { return (Plan_Skim_Base::Create_Fields ()); }
+
+protected:
+	virtual bool Set_Field_Numbers (void)     { return (Plan_Skim_Base::Set_Field_Numbers ()); }
+};
+
+typedef Plan_Skim_Data_Array *              Plan_Skim_Data_Ptr;
+typedef Pointer_Array <Plan_Skim_Data_Ptr>  Plan_Skim_Data_Arrays;
+typedef Plan_Skim_Data_Arrays::iterator     Plan_Skim_Data_Itr;
+
+//---------------------------------------------------------
+//	Plan_Skim_Sort_Array Class definition
+//---------------------------------------------------------
+
+class SYSLIB_API Plan_Skim_Sort_Array : public Db_Sort_Array, public Plan_Skim_Base
+{
+public:
+	Plan_Skim_Sort_Array ()  { Set_Base_File (this); }
+
+	virtual bool Create_Fields (void)         { return (Plan_Skim_Base::Create_Fields ()); }
+
+protected:
+	virtual bool Set_Field_Numbers (void)     { return (Plan_Skim_Base::Set_Field_Numbers ()); }
+};
+
+typedef Plan_Skim_Sort_Array *              Plan_Skim_Sort_Ptr;
+typedef Pointer_Array <Plan_Skim_Sort_Ptr>  Plan_Skim_Sort_Arrays;
+typedef Plan_Skim_Sort_Arrays::iterator     Plan_Skim_Sort_Itr;
+
+#endif

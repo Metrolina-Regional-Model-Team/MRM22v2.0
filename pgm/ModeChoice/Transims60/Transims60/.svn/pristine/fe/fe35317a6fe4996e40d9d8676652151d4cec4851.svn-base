@@ -1,0 +1,95 @@
+//*********************************************************
+//	Control.cpp - process the control parameters
+//*********************************************************
+
+#include "Router.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void Router::Program_Control (void)
+{
+	String key;
+
+	//---- create the network files ----
+
+	Update_Flag (Set_Control_Flag (UPDATE_PLAN_RECORDS));
+
+	Converge_Service::Program_Control ();
+										
+	Print (2, String ("%s Control Keys:") % Program ());
+
+	if (new_plan_flag && plan_flag) {
+		if (script_flag) Print (1);
+
+		update_plan_flag = Get_Control_Flag (UPDATE_PLAN_RECORDS);
+
+		reroute_time = Get_Control_Time (REROUTE_FROM_TIME_POINT);
+		reroute_flag = (reroute_time > 0);
+
+		Reroute_Time (reroute_time);
+		Update_Flag (update_plan_flag);
+
+		if (update_plan_flag && reroute_flag) {
+			Warning ("Re-Routing and Updating Plans are Mutually Exclusive");
+			update_plan_flag = false;
+		}
+	} else if (Set_Control_Flag (UPDATE_PLAN_RECORDS)) {
+		Error ("Update Plan Records Requires an Input and Output Plan File");
+	} else if (Get_Control_Time (REROUTE_FROM_TIME_POINT) > 0) {
+		Error ("Re-Routing Requires an Input and Output Plan File");
+	}
+
+	//---- route with specified mode ----
+
+	key = Get_Control_Text (ROUTE_WITH_SPECIFIED_MODE);
+
+	if (!key.empty ()) {
+		int mode = Mode_Code (key);
+
+		if (mode < 1 || mode >= MAX_MODE) {
+			Error (String ("Specified Mode %d is Out of Range (1..%d)") % mode % (MAX_MODE - 1));
+		}
+		if (key [0] >= '0' && key [0] <= '9') {
+			Print (0, String (" (%s)") % Mode_Code ((Mode_Type) mode));
+		}
+		Set_Mode (mode);
+
+		if (mode == TRANSIT_MODE || mode == PNR_IN_MODE || mode == PNR_OUT_MODE || 
+			mode == KNR_IN_MODE || mode == KNR_OUT_MODE) {
+
+			if (!System_File_Flag (TRANSIT_STOP) || !System_File_Flag (TRANSIT_ROUTE) ||
+				!System_File_Flag (TRANSIT_SCHEDULE) || !System_File_Flag (TRANSIT_DRIVER)) {
+				Error ("Transit Network Files are Required for Transit Paths");
+			}
+			if (mode == TRANSIT_MODE) Transit_Paths (true);
+			if (mode == PNR_IN_MODE || mode == PNR_OUT_MODE) ParkRide_Paths (true);
+			if (mode == KNR_IN_MODE || mode == KNR_OUT_MODE) KissRide_Paths (true);
+		} else {
+			System_File_False (TRANSIT_STOP);
+			System_File_False (TRANSIT_ROUTE);
+			System_File_False (TRANSIT_SCHEDULE);
+			System_File_False (TRANSIT_DRIVER);
+			Transit_Paths (false);
+			ParkRide_Paths (false);
+			KissRide_Paths (false);
+		}
+	}
+#ifdef DUMP_DETAILS
+
+	//---- dump park ride file ----
+
+	key = Get_Control_String (DUMP_PARK_RIDE_FILE);
+
+	if (!key.empty ()) {
+		Print (1);
+		dump_pnr_flag = true;
+
+		dump_pnr.File_Type ("Dump Park Ride File");
+
+		dump_pnr.Create (Project_Filename (key));
+		dump_pnr.File () << "Origin\tDestination\tParking\tType\tPenalty" << endl;
+	}
+#endif
+}

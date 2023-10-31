@@ -1,0 +1,486 @@
+//*********************************************************
+//	Control.cpp - process the control parameters
+//*********************************************************
+
+#include "ArcPlan.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void ArcPlan::Program_Control (void)
+{
+	String key, text;
+
+	//---- set the equivalence flag ----
+
+	Stop_Equiv_Flag (Check_Control_Key (NEW_ARC_STOP_GROUP_FILE));
+
+	//---- open network files ----
+
+	Data_Service::Program_Control ();
+
+	Read_Select_Keys ();
+
+	problem_flag = System_File_Flag (PROBLEM);
+	plan_flag = System_File_Flag (PLAN);
+	plan_skim_flag = System_File_Flag (PLAN_SKIM);
+
+	if (plan_flag && plan_skim_flag) {
+		Warning ("Processing Plans and Plan_Skims is Not Adviseable");
+	}
+	if (plan_flag) {
+		plan_file = System_Plan_File ();
+	}
+
+	//---- set the transit options ----
+
+	stop_flag = System_File_Flag (TRANSIT_STOP);
+	route_flag = System_File_Flag (TRANSIT_ROUTE);
+	driver_flag = System_File_Flag (TRANSIT_DRIVER);
+
+	if ((route_flag || driver_flag) && !stop_flag) {
+		Error ("Transit Stops are required for Transit Route Processing");
+	}
+
+	//---- get the projection data ----
+
+	projection.Read_Control ();
+
+	Print (2, String ("%s Control Keys:") % Program ());
+
+	//---- get the arcview plan file ----
+
+	key = Get_Control_String (NEW_ARC_PLAN_FILE);
+
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Plan Output");
+		}
+		arcview_plan.File_Type ("New Arc Plan File");
+		arcview_plan.File_Access (CREATE);
+		arcview_plan.Shape_Type (VECTOR);
+		arcview_plan.Set_Projection (projection);
+
+		if (!arcview_plan.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Plan File", arcview_plan.Shape_Filename ());
+		}
+		path_flag = true;
+
+		arcview_plan.Replicate_Fields (plan_file, false, false, true);
+
+		//---- add leg summary fields ----
+
+		arcview_plan.Add_Field ("LEG_MODE", DB_STRING, 12, MODE_CODE);
+		arcview_plan.Add_Field ("LEG_ID", DB_INTEGER, 10);
+		arcview_plan.Add_Field ("LEG_TIME", DB_TIME, 10, SECONDS);
+		arcview_plan.Add_Field ("LEG_LENGTH", DB_INTEGER, 10, METERS);
+		arcview_plan.Add_Field ("LEG_COST", DB_DOUBLE, 6.1, CENTS);
+		arcview_plan.Add_Field ("LEG_IMPED", DB_INTEGER, 10, IMPEDANCE);
+
+		arcview_plan.Write_Header ();
+	}
+
+	//---- open the arcview problem file ----
+
+	key = Get_Control_String (NEW_ARC_PROBLEM_FILE);
+
+	if (!key.empty ()) {
+		if (!problem_flag) {
+			Error ("A Problem File is Required for Arc Problem Output");
+		}
+		text = Get_Control_String (PROBLEM_DISPLAY_METHOD);
+		if (text.Equals ("ORG-DES") || text.Equals ("OD") || text.Equals ("ORIGIN-DESTINATION")) {
+			problem_method = 0;
+		} else if (text.Equals ("ORG") || text.Equals ("O") || text.Equals ("ORIGIN")) {
+			problem_method = 1;
+		} else if (text.Equals ("DES") || text.Equals ("D") || text.Equals ("DESTINATION")) {
+			problem_method = 2;
+		} else if (text.Equals ("LOC") || text.Equals ("L") || text.Equals ("LOCATION")) {
+			problem_method = 3;
+		} else {
+			Error (String ("Problem Display Method %s is Not Recognized") % text);
+		}
+		arcview_problem.File_Type ("New Arc Problem File");
+		arcview_problem.File_Access (CREATE);
+		arcview_problem.Shape_Type (((problem_method > 0) ? DOT : VECTOR));
+		arcview_problem.Set_Projection (projection);
+
+		if (!arcview_problem.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Problem File", arcview_problem.Shape_Filename ());
+		}
+		arcview_problem.Replicate_Fields (System_File_Base (PROBLEM));
+
+		arcview_problem.Write_Header ();
+
+		problem_out = true;
+
+		Get_Control_Text (PROBLEM_DISPLAY_METHOD);
+	}
+
+	//---- get the arcview bandwidth file ----
+
+	key = Get_Control_String (NEW_ARC_BANDWIDTH_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Bandwidth Output");
+		}
+		arcview_width.File_Type ("New Arc Bandwidth File");
+		arcview_width.File_Access (CREATE);
+		arcview_width.Shape_Type (POLYGON);
+		arcview_width.Set_Projection (projection);
+
+		if (!arcview_width.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Bandwidth File", arcview_width.Shape_Filename ());
+		}
+		width_flag = true;
+		Set_Bandwidth_Options ("VOLUME, FLOW");
+
+		key = Get_Control_String (BANDWIDTH_FIELD);
+
+		if (key.empty ()) {
+			Error ("A Bandwidth Field is needed for Bandwidth Processing");
+		}
+		width_flow_flag = key.Equals ("Flow");
+
+		arcview_width.Add_Field ("LINK", DB_INTEGER, 10);
+		arcview_width.Add_Field ("DIR", DB_INTEGER, 1);
+
+		if (width_flow_flag) {
+			arcview_width.Add_Field ("FLOW", DB_DOUBLE, 10.2);
+		} else {
+			arcview_width.Add_Field ("VOLUME", DB_INTEGER, 10);
+		}
+		arcview_width.Write_Header ();
+	}
+
+	//---- get the arcview time contour file ----
+
+	key = Get_Control_String (NEW_ARC_TIME_CONTOUR_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Time Contour Output");
+		}
+		arcview_time.File_Type ("New Arc Time Contour File");
+		arcview_time.File_Access (CREATE);
+		arcview_time.Shape_Type (VECTOR);
+		arcview_time.Set_Projection (projection);
+
+		if (!arcview_time.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Time Contour File", arcview_time.Shape_Filename ());
+		}
+		time_flag = true;
+
+		arcview_time.Add_Field ("CONTOUR", DB_INTEGER, 10);
+		arcview_time.Add_Field ("TIME", DB_TIME, 10.1, MINUTES);
+
+		arcview_time.Write_Header ();
+	}
+
+	//---- get the arcview distance contour file ----
+
+	key = Get_Control_String (NEW_ARC_DISTANCE_CONTOUR_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Distance Contour Output");
+		}
+		arcview_distance.File_Type ("New Arc Distance Contour File");
+		arcview_distance.File_Access (CREATE);
+		arcview_distance.Shape_Type (VECTOR);
+		arcview_distance.Set_Projection (projection);
+
+		if (!arcview_distance.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Distance Contour File", arcview_distance.Shape_Filename ());
+		}
+		distance_flag = true;
+
+		arcview_distance.Add_Field ("CONTOUR", DB_INTEGER, 10);
+		arcview_distance.Add_Field ("DISTANCE", DB_DOUBLE, 10.1, ((Metric_Flag ()) ? KILOMETERS : MILES));
+
+		arcview_distance.Write_Header ();
+	}
+
+	//---- get the arcview accessibilityr file ----
+
+	key = Get_Control_String (NEW_ARC_ACCESSIBILITY_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Accessibility Output");
+		}
+		arcview_access.File_Type ("New Arc Accessibility File");
+		arcview_access.File_Access (CREATE);
+		arcview_access.Shape_Type (DOT);
+		arcview_access.Set_Projection (projection);
+
+		if (!arcview_access.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Accessibility File", arcview_access.Shape_Filename ());
+		}
+		access_flag = true;
+
+		arcview_access.Add_Field ("ORIGIN", DB_INTEGER, 10);
+		arcview_access.Add_Field ("START", DB_STRING, 20);
+		arcview_access.Add_Field ("LOCATION", DB_INTEGER, 10);
+		arcview_access.Add_Field ("TTIME", DB_INTEGER, 10);
+		arcview_access.Add_Field ("DISTANCE", DB_INTEGER, 10);
+
+		arcview_access.Write_Header ();
+	}
+
+	//---- set the load flag ----
+
+	key = Get_Control_String (RIDERSHIP_SCALING_FACTOR);
+
+	if (!key.empty ()) {
+		load_factor = key.Double ();
+
+		load_flag = (load_factor != 0.0);
+	}
+
+	//---- get the arcview ridership file ----
+
+	key = Get_Control_String (NEW_ARC_RIDERSHIP_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Ridership Output");
+		}
+		if (!stop_flag || !route_flag || !driver_flag) {
+			Error ("Transit Data are need for Ridership Output");
+		}
+		arcview_rider.File_Type ("New Arc Ridership File");
+		arcview_rider.File_Access (CREATE);
+
+		if (load_flag) {
+			arcview_rider.Shape_Type (POLYGON);
+		} else {
+			arcview_rider.Shape_Type (VECTOR);
+		}
+		arcview_rider.Set_Projection (projection);
+
+		if (!arcview_rider.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Ridership File", arcview_rider.Shape_Filename ());
+		}
+		rider_flag = true;
+
+		arcview_rider.Add_Field ("LINK", DB_INTEGER, 10);
+		arcview_rider.Add_Field ("DIR", DB_INTEGER, 1);
+		arcview_rider.Add_Field ("SEGMENT", DB_INTEGER, 2);
+		arcview_rider.Add_Field ("BOARD", DB_INTEGER, 10);
+		arcview_rider.Add_Field ("RIDERS", DB_INTEGER, 10);
+		arcview_rider.Add_Field ("ALIGHT", DB_INTEGER, 10);
+
+		arcview_rider.Write_Header ();
+	}
+
+	//---- get the arcview stop demand file ----
+
+	key = Get_Control_String (NEW_ARC_STOP_DEMAND_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Stop Demand Output");
+		}
+		if (!stop_flag) {
+			Error ("Transit Stops are need for Stop Demand Output");
+		}
+		arcview_stop.File_Type ("New Arc Stop Demand File");
+		arcview_stop.File_Access (CREATE);
+		arcview_stop.Shape_Type (DOT);
+		arcview_stop.Set_Projection (projection);
+
+		if (!arcview_stop.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Stop Demand File", arcview_stop.Shape_Filename ());
+		}
+		on_off_flag = demand_flag = true;
+
+		arcview_stop.Add_Field ("STOP", DB_INTEGER, 10);
+		arcview_stop.Add_Field ("BOARD", DB_INTEGER, 10);
+		arcview_stop.Add_Field ("ALIGHT", DB_INTEGER, 10);
+		arcview_stop.Add_Field ("TOTAL", DB_INTEGER, 10);
+
+		arcview_stop.Write_Header ();
+	}
+
+	//---- get the arcview stop group file ----
+
+	key = Get_Control_String (NEW_ARC_STOP_GROUP_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file) {
+			Error ("A Plan File is Required for Arc Stop Group Output");
+		}
+		if (!stop_flag) {
+			Error ("Transit Stops are need for Stop Group Output");
+		}
+		arcview_group.File_Type ("New Arc Stop Group File");
+		arcview_group.File_Access (CREATE);
+		arcview_group.Shape_Type (DOT);
+		arcview_group.Set_Projection (projection);
+
+		if (!arcview_group.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Stop Group File", arcview_group.Shape_Filename ());
+		}
+		on_off_flag = group_flag = true;
+
+		arcview_group.Add_Field ("GROUP", DB_INTEGER, 10);
+		arcview_group.Add_Field ("NAME", DB_STRING, 40);
+		arcview_group.Add_Field ("BOARD", DB_INTEGER, 10);
+		arcview_group.Add_Field ("ALIGHT", DB_INTEGER, 10);
+		arcview_group.Add_Field ("TOTAL", DB_INTEGER, 10);
+
+		arcview_group.Write_Header ();
+	}
+
+	//---- get the arcview parking demand file ----
+
+	key = Get_Control_String (NEW_ARC_PARKING_DEMAND_FILE);
+	
+	if (!key.empty ()) {
+		if (!plan_file && !plan_skim_flag) {
+			Error ("A Plan or Plan Skim File is Required for Arc Drive Access Output");
+		}
+		arcview_parking.File_Type ("New Arc Parking Demand File");
+		arcview_parking.File_Access (CREATE);
+		arcview_parking.Shape_Type (DOT);
+		arcview_parking.Set_Projection (projection);
+
+		if (!arcview_parking.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Parking Demand File", arcview_parking.Shape_Filename ());
+		}
+		parking_flag = true;
+
+		arcview_parking.Add_Field ("PARKING", DB_INTEGER, 10);
+		arcview_parking.Add_Field ("DEPART", DB_INTEGER, 10);
+		arcview_parking.Add_Field ("ARRIVE", DB_INTEGER, 10);
+		arcview_parking.Add_Field ("TOTAL", DB_INTEGER, 10);
+
+		arcview_parking.Write_Header ();
+	}
+
+	//---- get the arcview location demand file ----
+
+	key = Get_Control_String (NEW_ARC_LOCATION_DEMAND_FILE);
+
+	if (!key.empty ()) {
+		if (!plan_file && !plan_skim_flag) {
+			Error ("A Plan or Plan Skim File is Required for Arc Drive Access Output");
+		}
+		if (!System_File_Flag (ZONE)) {
+			Error ("A Zone File is Required for Arc Location Demand Output");
+		}
+		arcview_location.File_Type ("New Arc Location Demand File");
+		arcview_location.File_Access (CREATE);
+		arcview_location.Shape_Type (DOT);
+		arcview_location.Set_Projection (projection);
+
+		if (!arcview_location.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Location Demand File", arcview_location.Shape_Filename ());
+		}
+		location_flag = true;
+
+		arcview_location.Add_Field ("LOCATION", DB_INTEGER, 10);
+		arcview_location.Add_Field ("ZONE", DB_INTEGER, 10);
+		arcview_location.Add_Field ("PRODUCTION", DB_INTEGER, 10);
+		arcview_location.Add_Field ("ATTRACTION", DB_INTEGER, 10);
+		arcview_location.Add_Field ("TOTAL", DB_INTEGER, 10);
+		arcview_location.Add_Field ("PROD_SHARE", DB_DOUBLE, 10.2);
+		arcview_location.Add_Field ("ATTR_SHARE", DB_DOUBLE, 10.2);
+		arcview_location.Add_Field ("TOT_SHARE", DB_DOUBLE, 10.2);
+
+		arcview_location.Write_Header ();
+	}
+
+	//---- get the arcview drive access file ----
+
+	key = Get_Control_String (NEW_ARC_DRIVE_ACCESS_FILE);
+
+	if (!key.empty ()) {
+		if (!plan_file && !plan_skim_flag) {
+			Error ("A Plan or Plan Skim File is Required for Arc Drive Access Output");
+		}
+		text = Get_Control_String (DRIVE_ACCESS_DISPLAY_METHOD);
+
+		if (text.Equals ("VECTOR") || text.Equals ("LINES") || text.Equals ("ORG-PARK-DES")) {
+			drive_method = 0;
+		} else if (text.Equals ("POINTS") || text.Equals ("DOTS") || text.Equals ("LOCATIONS")) {
+			drive_method = 1;
+		} else if (text.Equals ("ACCESS") || text.Equals ("DRIVE") || text.Equals ("ACCESS-ONLY")) {
+			drive_method = 2;
+		} else {
+			Error (String ("Drive Access Display Method %s is Not Recognized") % text);
+		}
+		arcview_drive_access.File_Type ("New Arc Drive Access File");
+		arcview_drive_access.File_Access (CREATE);
+		arcview_drive_access.Shape_Type ((drive_method != 1) ? VECTOR : DOT);
+		arcview_drive_access.Set_Projection (projection);
+
+		if (!arcview_drive_access.Open (Project_Filename (key))) {
+			File_Error ("Opening New Arc Drive Access File", arcview_drive_access.Shape_Filename ());
+		}
+		drive_access_flag = true;
+		
+		if (plan_skim_flag) {
+			arcview_drive_access.Replicate_Fields (System_Plan_Skim_File ());
+		} else {
+			arcview_drive_access.Replicate_Fields (plan_file, false, false, true);
+			drive_parking = arcview_drive_access.Add_Field ("PARKING", DB_INTEGER, 10);
+		}
+		arcview_drive_access.Write_Header ();
+
+		Get_Control_Text (DRIVE_ACCESS_DISPLAY_METHOD);
+	}
+
+	//---- check for output ----
+
+	if (!path_flag && !problem_flag && !width_flag && !time_flag && !distance_flag && !access_flag &&
+		!rider_flag && !on_off_flag && !parking_flag && !location_flag && !problem_out && !drive_access_flag) {
+		Error ("An Output ArcView File was Not Specified");
+	}
+
+	//---- get offset parameters ----
+
+	Read_Draw_Keys ();
+
+	//---- time contour increments ----
+
+	if (time_flag) {
+		Get_Control_List_Groups (CONTOUR_TIME_INCREMENTS, time_list);
+	}
+
+	//---- distance contour increments ----
+
+	if (distance_flag) {
+		Get_Control_List_Groups (CONTOUR_DISTANCE_INCREMENTS, distance_list);
+	}
+
+	//---- ridership scaling factor ----
+
+	if (load_flag) {
+		if (load_factor < 0.01 || load_factor > 100000.0) {
+			Error (String ("Ridership Scaling Factor %.2lf is Out of Range (0.01..100000.0)") % load_factor);
+		}
+		Print (2, String ("Ridership Scaling Factor = %.2lf riders / foot") % load_factor);
+
+		//---- minimum ridership value ----
+
+		min_load = Get_Control_Integer (MINIMUM_RIDERSHIP_VALUE);
+
+		//---- minimum ridership size ----
+
+		min_rider = Get_Control_Double (MINIMUM_RIDERSHIP_SIZE);
+
+		//---- maximum ridership size ----
+
+		max_rider = Get_Control_Double (MAXIMUM_RIDERSHIP_SIZE);
+	}
+
+	//---- read the stop equiv ----
+
+	if (Stop_Equiv_Flag ()) {
+		stop_equiv.Read (Report_Flag (STOP_EQUIV));
+	}
+}

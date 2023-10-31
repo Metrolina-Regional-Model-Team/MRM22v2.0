@@ -1,0 +1,488 @@
+//*********************************************************
+//	Read_Vissim.cpp - input VISSIM data
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+#include <math.h>
+
+//---------------------------------------------------------
+//	Read_Vissim
+//---------------------------------------------------------
+
+void VissimNet::Read_Vissim (void)
+{
+	int link, dir, node, from, to, size, hi_node;
+	bool header, end_flag, first, network_flag, nodes_flag, node_flag, links_flag, link_flag, lanes_flag, lane_flag;
+	bool geo_flag, points_flag, point_flag, linkseg_flag, linksegs_flag;
+	double dx, dy, len;
+	String line, lane, data;
+	Strings fields;
+	Str_Itr str_itr;
+	String_Pairs string_pairs;
+	String_Pair_Itr pair_itr;
+
+	XYZ pt;
+	XYZ_Itr pt_itr;
+	XYZ_Point point;
+	Points points;
+	Points_Itr pts_itr;
+
+	Int_Map_Itr map_itr;
+	Int2_Map_Itr ab_itr;
+	Node_Data node_data;
+	Link_Data link_data, *link_ptr, *from_ptr, *to_ptr;
+	Link_Itr link_itr;
+	Dir_Data dir_data;
+	Shape_Data shape_data, *shape_ptr;
+
+	Show_Message (1, String ("Reading %s -- Record") % input_file.File_Type ());
+	Set_Progress ();
+
+	network_flag = nodes_flag = node_flag = links_flag = link_flag = lanes_flag = lane_flag = false;
+	geo_flag = points_flag = point_flag = linkseg_flag = linksegs_flag = false;
+	header = true;
+
+	link = from = 0;
+	len = 0;
+
+	while (input_file.Read ()) {
+		Show_Progress ();
+
+		line = input_file.Record_String ();
+
+		if (line.Parse_XML (string_pairs) == 0) continue;
+
+		for (pair_itr = string_pairs.begin (); pair_itr != string_pairs.end (); pair_itr++) {
+			if (header) {
+				if (!pair_itr->first.Equals ("<?xml") || !pair_itr->second.Equals ("?>")) {
+					Error ("Input File is Not in XML Format");
+				}
+				header = false;
+				break;
+			}
+			end_flag = true;
+
+			if (pair_itr->first.Equals ("<network")) {
+				if (network_flag) Warning ("Network Block was Not Terminated");
+				network_flag = true;
+				end_flag = !pair_itr->second.Equals ("/>");
+			} else if (pair_itr->first.Equals ("</network")) {
+				if (!network_flag) Warning ("Network Block was Not Initialized");
+				network_flag = false;
+			}
+			if (network_flag) {
+
+				//---- set block flags ----
+
+				if (pair_itr->first.Equals ("<links")) {
+					if (links_flag) Warning ("Links Block was Not Terminated");
+					links_flag = true;
+				} else if (pair_itr->first.Equals ("</links")) {
+					if (!links_flag) Warning ("Links Block was Not Initialized");
+					links_flag = false;
+				} else if (pair_itr->first.Equals ("<nodes")) {
+					if (nodes_flag) Warning ("Nodes Block was Not Terminated");
+					nodes_flag = true;
+				} else if (pair_itr->first.Equals ("</nodes")) {
+					if (!nodes_flag) Warning ("Nodes Block was Not Initialized");
+					nodes_flag = false;
+				}
+
+				//---- link processing ----
+
+				if (links_flag) {
+					if (pair_itr->first.Equals ("<link")) {
+						if (link_flag) Warning ("Link Block was Not Terminated");
+						link_flag = !pair_itr->second.Equals ("/>");
+						link_data.Clear ();
+						dir_data.Clear ();
+						shape_data.Clear ();
+						points.clear ();
+
+						for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+							if (pair_itr->first.Equals ("name")) {
+								link_data.Name (pair_itr->second);
+							} else if (pair_itr->first.Equals ("no")) {
+								data = pair_itr->second;
+								if (data.length () > 10) {
+									data = data.substr (data.length () - 10);
+								}
+								if (data.length () == 10 &&  data [0] > '1') data [0] = '1';
+								link_data.Link (data.Integer ());
+							}
+						}
+						link_data.Anode (-1);
+						link_data.Bnode (-1);
+						link_data.Length (0);
+						link_data.Type (MAJOR);
+						dir_data.Lanes (0);
+						break;
+					} else if (pair_itr->first.Equals ("</link")) {
+						if (!link_flag) Warning ("Link Block was Not Initialized");
+						link_flag = false;
+
+						if (points.size () > 1) {
+							len = 0;
+							first = true;
+
+							for (pts_itr = points.begin (); pts_itr != points.end (); pts_itr++) {
+								if (first) {
+									first = false;
+								} else {
+									dx = pts_itr->x - point.x;
+									dy = pts_itr->y - point.y;
+									len += sqrt (dx * dx + dy * dy);
+								}
+								point = *pts_itr;
+								pt.x = Round (point.x);
+								pt.y = Round (point.y);
+								pt.z = Round (point.z);
+
+								shape_data.push_back (pt);
+							}
+							link_data.Length (Round (len));
+						}
+						link = (int) link_array.size ();
+						dir_data.Link (link);
+						dir_data.Dir (0);
+
+						dir = (int) dir_array.size ();
+
+						link_data.AB_Dir (dir);
+
+						if (shape_data.size () > 0) {
+							size = (int) shape_array.size ();
+							link_data.Shape (size);
+
+							shape_data.Link (link_data.Link ());
+							if (shape_map.insert (Int_Map_Data (shape_data.Link (), size)).second) {
+								shape_array.push_back (shape_data);
+							}
+						}
+						if (link_map.insert (Int_Map_Data (link_data.Link (), link)).second) {
+							link_array.push_back (link_data);
+						}
+						if (dir_map.insert (Int_Map_Data (dir_data.Link_Dir (), dir)).second) {
+							dir_array.push_back (dir_data);
+						}
+					}
+				}
+				if (link_flag) {
+					if (pair_itr->first.Equals ("<lanes")) {
+						if (lanes_flag) Warning ("Lanes Block was Not Terminated");
+						lanes_flag = true;
+					} else if (pair_itr->first.Equals ("</lanes")) {
+						if (!lanes_flag) Warning ("Lanes Block was Not Initialized");
+						lanes_flag = false;
+					} else if (pair_itr->first.Equals ("<geometry")) {
+						if (geo_flag) Warning ("Geometry Block was Not Terminated");
+						geo_flag = true;
+					} else if (pair_itr->first.Equals ("</geometry")) {
+						if (!geo_flag) Warning ("Geometry Block was Not Initialized");
+						geo_flag = false;
+					} else if (pair_itr->first.Equals ("<FromLinkEndPt")) {
+						for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+							if (pair_itr->first.Equals ("lane")) {
+								lane = pair_itr->second;
+								lane.Split (data, " ");
+								from = data.Integer () * 10 + lane.Integer ();
+								break;
+							}
+						}
+						break;
+					} else if (pair_itr->first.Equals ("<ToLinkEndPt")) {
+						for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+							if (pair_itr->first.Equals ("lane")) {
+								lane = pair_itr->second;
+								lane.Split (data, " ");
+								to = data.Integer () * 10 + lane.Integer ();
+								break;
+							}
+						}
+						if (!ab_map.insert (Int2_Map_Data (Int2_Key (from, to), link_data.Link ())).second) {
+							Warning (String ("Duplicate From-To Key = %d-%d") % from % to);
+						}
+						break;
+					}
+					if (lanes_flag) {
+						if (pair_itr->first.Equals ("<lane")) {
+							if (lane_flag) Warning ("Lane Block was Not Terminated");
+							lane_flag = !pair_itr->second.Equals ("/>");
+							dir_data.Lanes (dir_data.Lanes () + 1);
+						} else if (pair_itr->first.Equals ("</lane")) {
+							//if (!lane_flag) Warning ("Lane Block was Not Initialized");
+							lane_flag = false;
+						}
+					}
+					if (geo_flag) {
+						if (pair_itr->first.Equals ("<points") || pair_itr->first.Equals ("<points2D") || pair_itr->first.Equals ("<points3D")) {
+							if (points_flag) Warning ("Points Block was Not Terminated");
+							points_flag = true;
+						} else if (pair_itr->first.Equals ("</points") || pair_itr->first.Equals ("</points2D") || pair_itr->first.Equals ("</points3D")) {
+							if (!points_flag) Warning ("Points Block was Not Initialized");
+							points_flag = false;
+						}
+						if (points_flag) {
+							if (pair_itr->first.Equals ("<point") || pair_itr->first.Equals ("<point2D") || pair_itr->first.Equals ("<point3D")) {
+								if (point_flag) Warning ("Lane Block was Not Terminated");
+								point_flag = !pair_itr->second.Equals ("/>");
+
+								for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+									if (pair_itr->first.Equals ("x")) {
+										point.x = pair_itr->second.Double ();
+									} else if (pair_itr->first.Equals ("y")) {
+										point.y = pair_itr->second.Double ();
+									} else if (pair_itr->first.Equals ("z")) {
+										point.z = pair_itr->second.Double ();
+									} else if (pair_itr->first.Equals ("zOffset")) {
+										point.z = pair_itr->second.Double ();
+									}
+								}
+								if (!point_flag) {
+									points.push_back (point);
+								}
+								break;
+							} else if (pair_itr->first.Equals ("</point") || pair_itr->first.Equals ("</point2D") || pair_itr->first.Equals ("</point3D")) {
+								if (!point_flag) Warning ("Lane Block was Not Initialized");
+								point_flag = false;
+								points.push_back (point);
+							}
+						}
+					}
+				}
+
+				//---- node processing ----
+
+				if (nodes_flag) {
+					if (pair_itr->first.Equals ("<node")) {
+						if (node_flag) Warning ("Node Block was Not Terminated");
+						node_flag = !pair_itr->second.Equals ("/>");
+						node_data.Clear ();
+
+						for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+							if (pair_itr->first.Equals ("anmConnNodeNo")) {
+								data = pair_itr->second;
+								if (data.length () > 10) {
+									data = data.substr (data.length () - 10);
+								}
+								if (data.length () == 10 && data [0] > '1') data [0] = '1';
+								node_data.Node (data.Integer ());
+							} else if (pair_itr->first.Equals ("no")) {
+								data = pair_itr->second;
+								if (data.length () > 10) {
+									data = data.substr (data.length () - 10);
+								}
+								if (data.length () == 10 && data [0] > '1') data [0] = '1';
+								node_data.Node (data.Integer ());
+							}
+						}
+						if (!node_flag) {
+							if (node_map.insert (Int_Map_Data (node_data.Node (), (int) node_array.size ())).second) {
+								node_array.push_back (node_data);
+							}
+						}
+						break;
+					} else if (pair_itr->first.Equals ("</node")) {
+						if (!node_flag) Warning ("Node Block was Not Initialized");
+						node_flag = false;
+						if (node_data.Count () > 0) {
+							node_data.X (node_data.X () / node_data.Count ());
+							node_data.Y (node_data.Y () / node_data.Count ());
+							node_data.Z (node_data.Z () / node_data.Count ());
+						}
+						if (node_map.insert (Int_Map_Data (node_data.Node (), (int) node_array.size ())).second) {
+							node_array.push_back (node_data);
+						}
+					}
+					if (node_flag) {
+						if (pair_itr->first.Equals ("<linkSegs")) {
+							if (linksegs_flag) Warning ("LinkSeg Block was Not Terminated");
+							linksegs_flag = true;
+						} else if (pair_itr->first.Equals ("</linkSegs")) {
+							if (!linksegs_flag) Warning ("LinkSeg Block was Not Initialized");
+							linksegs_flag = false;
+						}
+						if (linksegs_flag) {
+							if (pair_itr->first.Equals ("<linkSegment")) {
+								if (linkseg_flag) Warning ("LinkSegment Block was Not Terminated");
+								linkseg_flag = !pair_itr->second.Equals ("/>");
+
+								for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+									if (pair_itr->first.Equals ("link")) {
+										data = pair_itr->second;
+										if (data.length () > 10) {
+											data = data.substr (data.length () - 10);
+										}
+										if (data.length () == 10 && data [0] > '1') data [0] = '1';
+										link = data.Integer ();
+									} else if (pair_itr->first.Equals ("fromPos")) {
+										len = pair_itr->second.Double ();
+									}
+								}
+								if (!linkseg_flag) {
+									map_itr = link_map.find (link);
+									if (map_itr != link_map.end ()) {
+										link_ptr = &link_array [map_itr->second];
+
+										if (link_ptr->Shape () >= 0) {
+											shape_ptr = &shape_array [link_ptr->Shape ()];
+
+											if (len > 0) {
+												pt = shape_ptr->back ();
+											} else {
+												pt = shape_ptr->front ();
+											}
+											node_data.X (node_data.X () + pt.x);
+											node_data.Y (node_data.Y () + pt.y);
+											node_data.Z (node_data.Z () + pt.z);
+											node_data.Add_Count ();
+										}
+										node = (int) node_array.size ();
+
+										if (len > 0) {
+											link_ptr->Bnode (node);
+										} else {
+											link_ptr->Anode (node);
+										}
+									}
+								}
+								break;
+							} else if (pair_itr->first.Equals ("</linkSegment")) {
+								if (!linkseg_flag) Warning ("LinkSegment Block was Not Initialized");
+								linkseg_flag = false;
+
+								map_itr = link_map.find (link);
+								if (map_itr != link_map.end ()) {
+									link_ptr = &link_array [map_itr->second];
+
+									if (link_ptr->Shape () >= 0) {
+										shape_ptr = &shape_array [link_ptr->Shape ()];
+
+										if (len > 0) {
+											pt = shape_ptr->back ();
+										} else {
+											pt = shape_ptr->front ();
+										}
+										node_data.X (node_data.X () + pt.x);
+										node_data.Y (node_data.Y () + pt.y);
+										node_data.Z (node_data.Z () + pt.z);
+										node_data.Add_Count ();
+									}
+									node = (int) node_array.size ();
+
+									if (len > 0) {
+										link_ptr->Bnode (node);
+									} else {
+										link_ptr->Anode (node);
+									}
+								}
+							}
+						}
+					}
+				}
+
+				network_flag = end_flag;
+			}
+		}
+	}
+	End_Progress ();
+
+	input_file.Close ();
+
+	map_itr = --node_map.end ();
+	hi_node = map_itr->first + 1;
+
+	//---- add nodes to connection links ----
+
+	for (ab_itr = ab_map.begin (); ab_itr != ab_map.end (); ab_itr++) {
+		map_itr = link_map.find (ab_itr->second);
+		link_ptr = &link_array [map_itr->second];
+
+		if (link_ptr->Shape () < 0) continue;
+
+		shape_ptr = &shape_array [link_ptr->Shape ()];
+		if (shape_ptr->size () < 2) continue;
+
+		from = ab_itr->first.first / 10;
+		map_itr = link_map.find (from);
+		from_ptr = &link_array [map_itr->second];
+
+		to = ab_itr->first.second / 10;
+		map_itr = link_map.find (to);
+		to_ptr = &link_array [map_itr->second];
+
+		//--- delete connectors at nodes ----
+
+		if (from_ptr->Bnode () >= 0 && to_ptr->Anode () >= 0) {
+			link_ptr->Length (0);
+
+			if (link_ptr->Shape () >= 0) {
+				shape_ptr->clear ();
+			}
+			continue;
+		}
+
+		if (from_ptr->Bnode () < 0 && link_ptr->Anode () < 0) {
+			pt_itr = shape_ptr->begin ();
+			pt.x = pt_itr->x;
+			pt.y = pt_itr->y;
+			pt.z = pt_itr->z;
+
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+			node_data.X (pt.x);
+			node_data.Y (pt.y);
+			node_data.Z (pt.z);
+
+			if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+				node_array.push_back (node_data);
+
+				link_ptr->Anode (node);
+				from_ptr->Bnode (node);
+				hi_node++;
+			}
+		}
+		if (link_ptr->Bnode () < 0 && to_ptr->Anode () < 0) {
+			pt_itr = --shape_ptr->end ();
+			pt.x = pt_itr->x;
+			pt.y = pt_itr->y;
+			pt.z = pt_itr->z;
+
+			node = (int) node_array.size ();
+			node_data.Node (hi_node);
+			node_data.X (pt.x);
+			node_data.Y (pt.y);
+			node_data.Z (pt.z);
+
+			if (node_map.insert (Int_Map_Data (node_data.Node (), node)).second) {
+				node_array.push_back (node_data);
+
+				link_ptr->Bnode (node);
+				to_ptr->Anode (node);
+				hi_node++;
+			}
+		}
+	}
+
+	//---- drop links without nodes ----
+
+	for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+		if (link_itr->Anode () < 0 || link_itr->Bnode () < 0 ||
+			link_itr->Anode () == link_itr->Bnode () || link_itr->Length () == 0) {
+
+			link_itr->Length (0);
+
+			if (link_itr->Shape () >= 0) {
+				shape_ptr = &shape_array [link_itr->Shape ()];
+				shape_ptr->clear ();
+			}
+		}
+	}
+
+	Write_Nodes ();
+	Write_Links ();
+	if (System_File_Flag (NEW_SHAPE)) {
+		Write_Shapes ();
+	}
+} 

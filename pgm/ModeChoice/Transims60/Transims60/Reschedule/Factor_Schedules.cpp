@@ -1,0 +1,83 @@
+//*********************************************************
+//	Factor_Schedules.cpp - factor transit schedules
+//*********************************************************
+
+#include "Reschedule.hpp"
+
+//---------------------------------------------------------
+//	Factor_Schedules
+//---------------------------------------------------------
+
+void Reschedule::Factor_Schedules (void)
+{
+	int run, runs;
+	double factor, min_percent, max_percent, percent;
+	Dtime time, old_time, start, old_tod, new_tod;
+	
+	Line_Itr line_itr;
+	Line_Stop_Itr stop_itr, first_itr;
+	Line_Run *run_ptr;
+
+	//---- process each transit route ----
+
+	for (line_itr = line_array.begin (); line_itr != line_array.end (); line_itr++) {
+		Show_Progress ();
+		
+		if (select_transit_modes && !select_transit [line_itr->Mode ()]) continue;
+		if (select_routes && !route_range.In_Range (line_itr->Route ())) continue;
+
+		first_itr = line_itr->begin ();
+		if (first_itr == line_itr->end ()) continue;
+
+		factor = mode_factor.Best (line_itr->Mode ());
+
+		if (min_flag) {
+			min_percent = mode_min.Best (line_itr->Mode ());
+		} else {
+			min_percent = 0.0;
+		}
+		if (max_flag) {
+			max_percent = mode_max.Best (line_itr->Mode ());
+		} else {
+			max_percent = 100000.0;
+		}
+		runs = (int) first_itr->size ();
+
+		//---- update the schedules for each run ----
+
+		for (run=0; run < runs; run++) {
+			start = old_tod = new_tod = first_itr->at (run).Schedule ();
+
+			for (stop_itr = first_itr; stop_itr != line_itr->end (); stop_itr++) {
+				run_ptr = &stop_itr->at (run);
+
+				old_tod = run_ptr->Schedule ();
+				old_time = (old_tod - start);
+
+				time = old_time * factor;
+
+				if ((min_flag || max_flag) && old_time > 0) {
+					percent = 100.0 * (time - old_time) / old_time;
+					if (percent < min_percent) {
+						percent = min_percent;
+					} else if (percent > max_percent) {
+						percent = max_percent;
+					}
+					time = old_time + (int) (old_time * percent / 100.0);
+				}
+				time = start + time;
+
+				run_ptr->Schedule (time.Round_Seconds ());
+
+				new_tod = run_ptr->Schedule ();
+			}
+			Run_Summary (line_itr->Mode (), line_itr->Route (), run, start, old_tod, new_tod);
+		}
+		if (change_flag) {
+			change_array.push_back (run_change);
+		}
+	}
+	if (file_flag) {
+		change_file.Close ();
+	}
+}

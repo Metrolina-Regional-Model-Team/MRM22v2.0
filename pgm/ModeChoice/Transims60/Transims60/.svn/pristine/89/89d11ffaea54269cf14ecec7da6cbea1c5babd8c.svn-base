@@ -1,0 +1,21 @@
+//*********************************************************
+//	Get_Location_Data.cpp - Read the Location File
+//*********************************************************
+
+#include "Router.hpp"
+
+//---------------------------------------------------------
+//	Get_Location_Data
+//---------------------------------------------------------
+
+bool Router::Get_Location_Data (Location_File &file, Location_Data &data)
+{
+	if (Data_Service::Get_Location_Data (file, data)) {
+		if (alt_des_flag) {
+			int alt_des = file.Get_Integer (alt_des_field);
+			alt_des_array.push_back (alt_des);
+		}
+		return (true);
+	}
+	return (false);
+}

@@ -1,0 +1,29 @@
+//*********************************************************
+//	Get_Location_Data.cpp - Read the Location File
+//*********************************************************
+
+#include "Router.hpp"
+
+//---------------------------------------------------------
+//	Get_Location_Data
+//---------------------------------------------------------
+
+bool Router::Get_Location_Data (Location_File &file, Location_Data &data)
+{
+	if (Data_Service::Get_Location_Data (file, data)) {
+		if (capacity_flag) {
+			Loc_Cap_Data loc_cap_data;
+			Int_Itr itr;
+
+			loc_cap_data.capacity = file.Get_Integer (loc_cap_field);
+			loc_cap_data.demand = 0;
+
+			for (itr = next_des_field.begin (); itr != next_des_field.end (); itr++) {
+				loc_cap_data.next_des.push_back (file.Get_Integer (*itr));
+			}
+			loc_cap_array.push_back (loc_cap_data);
+		}
+		return (true);
+	}
+	return (false);
+}

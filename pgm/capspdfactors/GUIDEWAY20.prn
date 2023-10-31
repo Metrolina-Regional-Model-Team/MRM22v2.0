@@ -1,0 +1,136 @@
+    209654  South LRT                Sharon West              I-485 (S)                      1101      2.00      2.00      1.03      1.03
+    209658  South LRT                Arrowood                 Sharon West                    1102      2.00      2.00      1.30      1.30
+    209659  South LRT                Archdale                 Arrowood                       1103      2.00      2.00      1.67      1.67
+    209660  South LRT                Tyvola                   Archdale                       1104      2.00      2.00      1.34      1.34
+    222349  South LRT                Woodlawn                 Tyvola                         1105      2.00      2.00      1.22      1.22
+    209674  South LRT                Scaleybark               Woodlawn                       1106      2.00      2.00      1.62      1.62
+    209676  South LRT                New Bern                 Scaleybark                     1107      2.00      2.00      1.34      1.34
+    233830  South LRT                East-West                New Bern                       1108      2.00      2.00      2.08      2.08   
+    222343  South LRT                East-West                New Bern                       1108      2.00      2.00      2.08      2.08
+    222342  South LRT                Bland                    East-West                      1109      1.00      1.00      0.70      0.70
+    209682  South LRT                Carson                   Rensselaer                     1110      2.00      2.00      0.62      0.62
+    224408  CBD LRT                  Stonewall                Carson                         1111      1.00      2.00      0.87      0.87
+    222340  CBD LRT                  3rd St                   Stonewall                      1112      2.00      1.00      0.75      0.75
+    222339  CBD LRT                  CTC                      3rd St                         1113      1.00      1.00      0.60      0.60
+    209688  CBD LRT                  Node 16125               CTC                            1114      0.56      0.23      0.09      0.09
+    209689  CBD LRT                  7th St                   Node 16125                     1115      1.44      1.77      0.57      0.57
+    209810  CBD LRT                  7th St                   9th St                         1116      0.94      0.94      0.42      0.42
+    209808  Northeast LRT            9th St                   16th St                        1117      2.22      2.22      1.70      1.70
+    209803  Northeast LRT            16th St                  27th St                        1118      1.68      1.68      1.16      1.16
+    209820  Northeast LRT            27th St                  36th St                        1119      2.12      2.12      1.60      1.60
+    222922  Northeast LRT            36th St                  Sugar Crk (NCRR)               1120      2.22      2.22      1.70      1.70
+    222923  Northeast LRT (NCRR)     Sugar Crk (NCRR)         Eastway                        1121      3.26      3.26      2.74      2.74
+    225269  Northeast LRT, Tryon     36th Street              Sugar Creek                    1220      1.12      1.12      0.60      0.60
+    209710  Northeast LRT, Tryon     Sugar Creek              Eastway Dr                     1221      2.72      2.72      2.20      2.20
+    209890  Northeast LRT            Eastway                  Node 16254                     1122      0.62      0.63      0.27      0.27
+    209901  Northeast LRT            Node 16254               Tom Hunter                     1123      1.81      1.80      1.46      1.46
+    209902  Northeast LRT            Tom Hunter               Rocky River                    1124      1.74      1.74      1.13      1.13
+    209891  Northeast LRT            Rocky River              City Blvd                      1125      1.40      1.41      1.05      1.05
+    209912  Northeast LRT            City Blvd                McCullough                     1126      0.95      0.89      0.62      0.62
+    209906  Northeast LRT            McCullough               JW Clay                        1127      2.12      2.12      1.60      1.60
+    222992  Northeast LRT            JW Clay                  UNC Charlotte                  1128      2.18      2.18      1.66      1.66
+    222993  Northeast LRT            UNC Charlotte            Mallard Crk Church             1129      1.84      1.84      1.32      1.32
+    209970  Northeast LRT            Mallard Crk Church       I-485 (NE)                     1130      1.61      1.61      0.77      0.77
+    222981  Northeast LRT            I-485 (NE)               I-485 (NE) (N side)            1131      1.59      1.59      0.76      0.76
+    209790  North Commuter Rail      Node 16147               Gateway                        2001      2.36      2.36      1.97      1.97
+    209896  North Commuter Rail      Derita Sta               Node 16147                     2002      4.64      4.64      3.88      3.88
+    209884  North Commuter Rail      Harris Sta               Derita                         2003      5.01      5.01      3.27      3.27
+    222371  North Commuter Rail      Eastfield Sta            Harris Sta                     2004      2.99      2.99      2.07      2.07
+    209881  North Commuter Rail      HambrightSta             Eastfield Sta                  2005      3.01      3.01      1.40      1.40
+    209929  North Commuter Rail      Huntersville             Hambright                      2006      5.99      5.99      2.30      2.30
+    209935  North Commuter Rail      Node 16287               Huntersville                   2007      3.39      3.39      2.06      2.06
+    210047  North Commuter Rail      Sam Furr Sta             Node 16287                     2008      1.62      1.62      0.99      0.99
+    209943  North Commuter Rail      Cornelius                Sam Furr Sta                   2009      2.99      2.99      2.03      2.03
+    209944  North Commuter Rail      Davidson Sta             Cornelius                      2010      3.01      3.01      1.59      1.59
+    209917  North Commuter Rail      Mt. Mourne               Davidson                       2011      5.99      5.99      3.56      3.56
+    209946  North Commuter Rail      Mooresville              Mt. Mourne                     2012      6.01      6.01      2.98      2.98
+    210057  North Commuter Rail      Mooresville              Williams St                    2013      2.99      2.99      1.95      1.95
+    222911  Southeast LRT (Alt1)     CBD LRT                  McDowell St                    3101      1.85      1.85      1.28      1.28
+    210176  Southeast LRT (Alt1)     Alexander St. Sta        Elizabeth                      3102      1.22      1.22      1.24      1.24
+    222925  Southeast LRT            Elizabeth                7th Street                     3103      0.54      0.87      0.85      0.85
+    228943  Southeast LRT            7th Street               Brookshire ramp                3104      0.42      0.42      0.44      0.44
+    222943  Southeast BRT/LRT        Node 22270               Brookshire ramp                3105      0.40      0.40      0.42      0.42
+    209800  Southeast BRT/LRT        Pecan Sta                Node 22270                     3106      0.37      0.71      0.39      0.39
+    222915  Southeast BRT/LRT        HOV Acc near Pecan       Pecan Sta                      3107      0.56      0.23      0.34      0.34
+    209762  Southeast BRT/LRT        Briar Crk Sta            HOV Acc near Pecan             3108      1.68      2.01      1.49      1.49
+    209836  Southeast BRT/LRT        WB Indep Access          Briar Crk Sta                  3109      2.01      1.68      1.33      1.33
+    209835  Southeast BRT/LRT        Amity Gardens Sta        WB Indep Access                3110      0.17      0.50      0.13      0.13
+    222868  Southeast BRT/LRT        EB Albemarle Access      Amity Gardens Sta              3111      0.88      0.55      0.45      0.45
+    228917  Southeast BRT/LRT        Sharon Amity Access      EB Albemarle Access            3112      0.33      0.33      0.28      0.28
+    222871  Southeast BRT/LRT        Sharon Amity Station     Sharon Amity Access            3113      0.24      0.58      0.20      0.20
+    225154  Southeast BRT/ LRT       Idlewild access          Sharon Amity Station           3114      1.52      1.19      1.00      1.00
+    209763  Southeast BRT/LRT        Conference Sta           Idlewild access                3115      0.19      0.52      0.16      0.16
+    225059  Southeast BRT/ LRT       Node 23194               Conference Sta                 3116      1.22      0.89      0.85      0.85
+    222902  Southeast BRT/LRT        temp acc from Harris     Node 23194                     3117      1.15      1.15      1.10      1.10
+    209831  Southeast BRT/LRT        Village Lake Sta         temp acc from Harris           3118      0.12      0.46      0.12      0.12
+    228416  Southeast BRT/ LRT       Krefeld                  Village Lake Sta               3119      0.89      0.89      0.53      0.53
+    225063  Southeast BRT/ LRT       acc (W Sardis N)         Krefeld                        3120      0.83      0.50      0.47      0.47
+    209703  Southeast BRT/LRT        Sardis North Sta         acc (S VillageLk)              3122      0.67      1.00      0.64      0.64
+    225069  Southeast BRT/ LRT       acc (N Sam Newell)       Sardis North Sta               3123      0.75      0.41      0.30      0.30
+    209965  Southeast BRT/LRT        Sam Newell overpass      acc (S Sardis N)               3124      0.96      0.96      0.70      0.70
+    222887  Southeast BRT/LRT        Indep& Sam Newell        Indep Pointe Sta               3125      0.63      0.30      0.22      0.22
+    209948  Southeast BRT/LRT        Indep Pointe Sta         Hwy 51 Station                 3126      1.84      1.84      1.14      1.14
+    209955  Southeast BRT/LRT        Hwy 51 Station           Matthews TOD Sta               3127      2.02      2.02      1.05      1.05
+    209950  Southeast BRT/LRT        Matthews TOD sta         CPCC Levine Sta                3128      1.95      1.95      0.76      0.76
+    210026  W Trade BRT/LRT          Gateway Sta              Node 16188                     3200      0.34      0.31      0.09      0.09
+    209765  W Trade BRT/LRT          Node 16188               Tryon St Sta                   3201      1.60      1.63      1.38      1.38
+    222934  W Trade BRT/LRT          Tryon St Sta             CTC                            3202      0.80      0.80      0.33      0.33
+    222955  West/Freedom BRT         Cedar Str Sta            Gateway                        4101      3.42      2.62      3.42      2.62
+    209783  West/Freedom BRT         Freedom Sta              Cedar Str Sta                  4102      2.97      2.97      2.97      2.97
+    222951  West BRT                 Morehead Suttle          Freedom Sta                    4103      4.46      4.71      4.46      4.71
+    210078  West BRT                 Morehead/Wilk            Morehead Suttle                4104      3.47      3.58      3.47      3.58
+    209742  West LRT/BRT             Wilkinson Crossing       Morehead / Wilk                4105      2.77      2.90      2.95      3.08
+    209727  West LRT/BRT             Morris Field St          Wilkinson Crossing             4106      2.94      2.32      2.94      2.61
+    209738  West LRT/BRT             Node 16170               Morris Field St                4107      3.27      3.12      3.56      3.46
+    209739  West LRT/BRT             Harlee/Stafford          Node 16170                     4108      3.41      2.43      3.41      2.71
+    209717  West LRT/BRT             Node 16156               Harlee/Stafford                4109      1.44      1.31      1.45      1.45
+    209720  West LRT/BRT             W I-485 Sta              Node 16156                     4110      1.71      1.58      1.77      1.74
+    209724  West LRT/BRT             Sam Wilson Station       W I-485 Sta                    4191      1.25      1.25      1.25      1.25
+    209723  West LRT/BRT             Old Dowd Sta             Sam Wilson St                  4192      0.91      0.91      0.91      0.91
+    210526  Northeast BRT            I-85                     US 29                          5001      2.19      2.19      1.48      1.48
+    209704  Northeast BRT            I-485 Sta                Mallard Crk Sta                5002      2.08      2.08      1.37      1.37
+    209973  Northeast BRT            Kings Grant Sou          I-485 Sta                      5003      1.75      1.75      1.03      1.03
+    209972  Northeast BRT            Kings Grant Nor          Kings Grant Sou                5004      1.48      1.48      0.77      0.77
+    222352  Northeast BRT            Concord Mills            Kings Grant Nor                5005      1.64      1.64      0.92      0.92
+    223039  NSLRText                 I485STA                  PinevilleSTA                   1101      2.71      2.71      2.06      2.06
+    223042  NSLRText                 PinevilleSTA             Countyline                     1102      1.32      1.16      0.95      0.95
+    223041  NSLRText                 Countyline               Regent Pkwy                    1103      1.16      1.28      0.84      0.84
+    223040  NSLRText                 Regent Pkwy              Springfield                    1104      1.38      1.26      2.17      2.17
+    223046  NSLRText                 SpringField              Ft Mill                        1105      3.81      3.81      3.28      3.28
+    223049  NSLRText                 Ft Mill                  Southern Pkwy                  1106      2.37      2.37      1.69      1.69
+    223052  NSLRText                 Southern Pkwy            CelRiver                       1107      3.24      3.24      2.65      2.65
+    223055  NSLRText                 Cel River                I77 DaveLyle                   1108      2.26      2.26      1.57      1.57
+    223058  NSLRText                 I77 Dave Lyle            Rock Hill                      1109      4.49      4.49      4.02      4.02
+    223064  US21 BRT                 Springfield              toSC160                        1301      3.56      3.40      3.41      3.41
+    223065  US21 BRT                 fr Springfield           SC160                          1302      2.13      2.29      2.02      2.02
+    223066  US21 BRT                 SC160                    Harris Rd                      1303      1.36      1.36      1.12      1.12
+    223067  US21 BRT                 Sutton-US21              Cherry-US21                    1305      2.42      2.42      1.82      1.82
+    223068  US21 BRT                 Cherry-US21              Anderson-Cherry                1306      1.45      1.45      0.98      0.98
+    223069  US21 BRT                 Anderson-Cherry          Mt Galant-Cherry               1307      1.50      1.50      0.96      0.96
+    223070  US21 BRT                 Mt Galant-cherry         Richmond-Cherry                1308      2.46      2.46      2.24      2.24
+    223071  US21 BRT                 Richmond-Cherry          Oakland-Cherry                 1309      1.39      1.39      0.90      0.90
+    223072  US21 BRT                 Oakland                  to  Wilson                     1310      1.93      1.93      3.51      3.51
+    223073  US21 BRT                 Oakland                  White St                       1311      0.91      0.91      1.23      1.23
+    223088  NSCRail2                 CGS                      nonsta                         1201      2.29      2.20      1.84      1.84
+    223089  NSCRail2                 nonsta                   nonsta                         1202      2.48      2.48      2.48      2.48
+    223090  NSCRail2                 nonsta                   Morehead/Wilkinson             1203      0.56      0.63      0.18      0.18
+    223091  NSCRail2                 Morehead/Wilkinson       nosta                          1204      3.70      3.63      2.74      2.74
+    223102  NSCRail2                 nosta                    WestBlvd                       1205      1.86      1.98      1.10      1.10
+    223092  NSCRail2                 WestBlvd                 nosta                          1206      3.04      2.91      2.09      2.09
+    223093  NSCRail2                 nosta                    Tyvola South Corr              1207      2.61      2.73      1.66      1.66
+    223094  NSCRail2                 SCLRT Tyvola             Archdale rd                    1208      1.43      1.31      1.38      1.38
+    223095  NSCRail2                 Archdale Rd              Arrowood Rd                    1209      1.08      1.08      1.80      1.80
+    223096  NSCRail2                 Arrowood Rd              nosta                          1210      0.96      0.96      1.60      1.60
+    223097  NSCRail2                 nosta                    Sharon Rd                      1211      0.85      0.85      1.42      1.42
+    223098  NSCRail2                 Sharon Rd                I485 Sta                       1212      1.73      1.85      1.20      1.20
+    223007  I77BRT                   Westinghouse             Carowinds                      1001      2.72      2.72      2.15      2.15
+    223010  I77BRT                   Carowinds                Gold Hill                      1002      3.20      3.20      2.68      2.68
+    223011  I77BRT                   Gold Hill                SC160                          1003      3.00      3.00      2.46      2.46
+    223012  I77BRT                   SC160                    Sutton                         1004      3.75      3.75      3.29      3.29
+    223013  I77BRT                   Sutton                   Cherry                         1005      3.13      3.13      2.60      2.60
+    223014  I77BRT                   Cherry                   DaveLyle                       1006      2.85      2.85      2.29      2.29
+    223015  I77BRT                   Dave Lyle                Anderson                       1007      3.14      3.14      2.62      2.62
+    223034  I77BRT                   Dave Lyle                Manchester                     1008      2.05      2.05      1.42      1.42
+    223392  US21 BRT                 Harris Rd                Sutton Rd                      1304      1.63      1.63      1.33      1.33
+    223396  US21 BRT                 US21&SC160               Munn Rd Station                1321      1.78      1.78      1.07      1.07
+    223397  US21 BRT                 Munn Rd Station          US21 & Harris Rd               1322      1.23      1.09      0.80      0.80

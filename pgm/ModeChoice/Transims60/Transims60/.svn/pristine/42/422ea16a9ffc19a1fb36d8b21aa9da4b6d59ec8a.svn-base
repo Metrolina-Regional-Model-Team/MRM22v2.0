@@ -1,0 +1,305 @@
+//*********************************************************
+//	Park_Demand_Data.cpp - parking demand and penalty data
+//*********************************************************
+
+#include "Park_Demand_Data.hpp"
+#include "Data_Service.hpp"
+
+//---------------------------------------------------------
+//	Initialize
+//---------------------------------------------------------
+
+void Park_Period_Array::Initialize (Time_Periods *time_periods, int num_rec, int function)
+{
+	periods = time_periods;
+	if (function > pen_function) pen_function = function;
+
+	if (num_rec > 0) {
+		num_records = num_rec;
+	} else {
+		num_records = (int) dat->parking_array.size ();
+	}
+	if (num_records > 0) {
+		Park_Period_Itr period_itr;
+		Park_Period period_rec;
+		Park_Demand park_demand;
+
+		assign (periods->Num_Periods (), period_rec);
+
+		for (period_itr = begin (); period_itr != end (); period_itr++) {
+			period_itr->assign (num_records, park_demand);
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Replicate
+//---------------------------------------------------------
+
+void Park_Period_Array::Replicate (Park_Period_Array &period_array)
+{
+	periods = period_array.periods;
+	num_records = period_array.num_records;
+	pen_function = period_array.pen_function;
+
+	if (num_records > 0) {
+		Park_Period_Itr period_itr;
+		Park_Period period_rec;
+		Park_Demand park_demand;
+
+		assign (periods->Num_Periods (), period_rec);
+
+		for (period_itr = begin (); period_itr != end (); period_itr++) {
+			period_itr->assign (num_records, park_demand);
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Zero_Demand
+//---------------------------------------------------------
+
+void Park_Period_Array::Zero_Demand (void)
+{
+	if (num_records > 0) {
+		Park_Period_Itr period_itr;
+		Park_Demand_Itr park_itr;
+
+		for (period_itr = begin (); period_itr != end (); period_itr++) {
+			for (park_itr = period_itr->begin (); park_itr != period_itr->end (); park_itr++) {
+				park_itr->Demand (0);
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Zero_Penalty
+//---------------------------------------------------------
+
+void Park_Period_Array::Zero_Penalty (void)
+{
+	if (num_records > 0) {
+		Park_Period_Itr period_itr;
+		Park_Demand_Itr park_itr;
+
+		for (period_itr = begin (); period_itr != end (); period_itr++) {
+			for (park_itr = period_itr->begin (); park_itr != period_itr->end (); park_itr++) {
+				park_itr->Penalty (0);
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Copy_Demand_Data
+//---------------------------------------------------------
+
+void Park_Period_Array::Copy_Demand_Data (Park_Period_Array &period_array, bool zero_flag)
+{
+	if (num_records == 0) Replicate (period_array);
+
+	if (num_records > 0) {
+		int p, i;
+
+		Park_Period_Itr period_itr;
+		Park_Period *period_ptr;
+		Park_Demand_Itr park_itr;
+		Park_Demand *park_ptr;
+
+		for (p=0, period_itr = begin (); period_itr != end (); period_itr++, p++) {
+			period_ptr = &period_array [p];
+
+			for (i=0, park_itr = period_itr->begin (); park_itr != period_itr->end (); park_itr++, i++) {
+				park_ptr = period_ptr->Data_Ptr (i);
+
+				park_itr->Demand (park_ptr->Demand ());
+				park_itr->Penalty (park_ptr->Penalty ());
+
+				if (zero_flag) park_ptr->Demand (0);
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Copy_Penalty_Data
+//---------------------------------------------------------
+
+void Park_Period_Array::Copy_Penalty_Data (Park_Period_Array &period_array, bool zero_flag)
+{
+	if (num_records == 0) Replicate (period_array);
+
+	if (num_records > 0) {
+		int p, i;
+		Park_Period_Itr period_itr;
+		Park_Period *period_ptr;
+		Park_Demand_Itr park_itr;
+		Park_Demand *park_ptr;
+
+		for (p=0, period_itr = begin (); period_itr != end (); period_itr++, p++) {
+			period_ptr = &period_array [p];
+
+			for (i=0, park_itr = period_itr->begin (); park_itr != period_itr->end (); park_itr++, i++) {
+				park_ptr = period_ptr->Data_Ptr (i);
+
+				if (zero_flag) {
+					park_ptr->Demand (0);
+				} else {
+				    park_itr->Demand (park_ptr->Demand ());
+				}
+				park_itr->Penalty (park_ptr->Penalty ());
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Add_Demand
+//---------------------------------------------------------
+
+void Park_Period_Array::Add_Demand (Park_Period_Array &period_array, bool zero_flag)
+{
+	if (num_records == 0) Replicate (period_array);
+
+	if (num_records > 0) {
+		int p, i;
+		Park_Period_Itr period_itr;
+		Park_Period *period_ptr;
+		Park_Demand_Itr park_itr;
+		Park_Demand *park_ptr;
+
+		for (p=0, period_itr = begin (); period_itr != end (); period_itr++, p++) {
+			period_ptr = &period_array [p];
+
+			for (i=0, park_itr = period_itr->begin (); park_itr != period_itr->end (); park_itr++, i++) {
+				park_ptr = period_ptr->Data_Ptr (i);
+
+				park_itr->Add_Demand (park_ptr->Demand ());
+				if (zero_flag) park_ptr->Demand (0);
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Merge_Penalty
+//---------------------------------------------------------
+
+void Park_Period_Array::Add_Penalty (Park_Period_Array &period_array, bool zero_flag)
+{
+	if (num_records == 0) Replicate (period_array);
+
+	if (num_records > 0) {
+		int p, i;
+		Park_Period_Itr period_itr;
+		Park_Period *period_ptr;
+		Park_Demand_Itr park_itr;
+		Park_Demand *park_ptr;
+
+		for (p=0, period_itr = begin (); period_itr != end (); period_itr++, p++) {
+			period_ptr = &period_array [p];
+
+			for (i=0, park_itr = period_itr->begin (); park_itr != period_itr->end (); park_itr++, i++) {
+				park_ptr = period_ptr->Data_Ptr (i);
+
+				park_itr->Add_Penalty (park_ptr->Penalty ());
+				if (zero_flag) park_ptr->Demand (0);
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------
+//	Period_Ptr
+//---------------------------------------------------------
+
+Park_Period * Park_Period_Array::Period_Ptr (Dtime time)
+{
+	int period = periods->Period (time);
+
+	if (period >= 0) {
+		return (&at (period));
+	} else {
+		return (0);
+	}
+}
+
+//---------------------------------------------------------
+//	Parking_Duration
+//---------------------------------------------------------
+
+void Park_Period_Array::Parking_Duration (int index, Dtime time, Dtime duration)
+{
+	int period, last_period;
+	Park_Period *period_ptr;
+	Park_Demand *park_ptr;
+
+	period = periods->Period (time);
+	last_period = periods->Period (time + duration);
+
+	if (period < 0) period = 0;
+	if (last_period < 0) last_period = periods->Num_Periods () - 1;
+
+	for (; period <= last_period; period++) {
+		period_ptr = Period_Ptr (period);
+		park_ptr = period_ptr->Data_Ptr (index);
+		park_ptr->Add_Demand (1);
+	}
+}
+
+//---------------------------------------------------------
+//	Penalty
+//---------------------------------------------------------
+
+int Park_Period_Array::Penalty (int index, Dtime time)
+{
+	Park_Period *period_ptr = Period_Ptr (time);
+	if (period_ptr == 0) return (0);
+	return (period_ptr->Penalty (index));
+}
+
+//---------------------------------------------------------
+//	Update_Penalties
+//---------------------------------------------------------
+
+void Park_Period_Array::Update_Penalties (void)
+{
+	if (pen_function <= 0) return;
+
+	int index, period, num_penalty;
+	double ratio, penalty;
+	Dtime start_time, end_time, tod;
+	Park_Period_Itr period_itr;
+	Park_Demand_Itr demand_itr;
+	Parking_Data *parking_ptr;
+	Park_Nest_Itr park_itr;
+
+	num_penalty = 0;
+
+	for (period = 0, period_itr = begin (); period_itr != end (); period_itr++, period++) {
+		periods->Period_Range (period, start_time, end_time);
+
+		for (index = 0, demand_itr = period_itr->begin (); demand_itr != period_itr->end (); demand_itr++, index++) {
+			if (demand_itr->Demand () > 0) {
+				parking_ptr = &dat->parking_array [index];
+
+				for (park_itr = parking_ptr->begin (); park_itr != parking_ptr->end (); park_itr++) {
+					if (start_time >= park_itr->Start () && end_time <= park_itr->End () && park_itr->Space () > 0) {
+						ratio = (double) demand_itr->Demand () / park_itr->Space ();
+						penalty = exe->functions.Apply_Function (pen_function, ratio);
+						if (penalty > MAX_PENALTY) {
+							penalty = MAX_PENALTY;
+						}
+						if (penalty > 0) {
+							demand_itr->Penalty (exe->Round (penalty));
+							num_penalty++;
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+	exe->Print (2, "Number of Parking Penalty Updates = ") << num_penalty;
+}

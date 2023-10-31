@@ -1,0 +1,71 @@
+//*********************************************************
+//	Speed_Fields.cpp - process speed records
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+//---------------------------------------------------------
+//	Speed_Fields
+//---------------------------------------------------------
+
+bool VissimNet::Speed_Fields (void)
+{
+	int code;
+	double x, y;
+	String data;
+
+	if (pair_itr->first.Equals ("<desSpeedDistribution")) {
+		if (speed_flag) Warning ("Speed Distribution Block was Not Terminated");
+		speed_flag = true;
+	} else if (pair_itr->first.Equals ("</desSpeedDistribution")) {
+		if (!speed_flag) Warning ("Speed Distribution Block was Not Initialized");
+		speed_flag = false;
+	}
+	if (speed_flag) {
+		if (pair_itr->first.Equals ("<speedDistrDatPts")) {
+			if (speed_pts_flag) Warning ("Speed Point Block was Not Terminated");
+			speed_pts_flag = true;
+			fx = fy = value = 0.0;
+		} else if (pair_itr->first.Equals ("</speedDistrDatPts")) {
+			if (!speed_pts_flag) Warning ("Speed Point Block was Not Initialized");
+			speed_pts_flag = false;
+			speed_map.insert (Int_Map_Data (code, Round (value)));
+			return (true);
+		}
+		if (speed_pts_flag) {
+			if (pair_itr->first.Equals ("<speedDistributionDataPoint")) {
+				if (speed_pt_flag) Warning ("Speed Point Block was Not Terminated");
+				speed_pt_flag = true;
+			} else if (pair_itr->first.Equals ("</speedDistributionDataPoint")) {
+				if (!speed_pt_flag) Warning ("Lanes Block was Not Initialized");
+				speed_pt_flag = false;
+			}
+			if (speed_pt_flag) {
+				x = y = 0;
+
+				for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+					if (pair_itr->first.Equals ("fx")) {
+						x = pair_itr->second.Double ();
+					} else if (pair_itr->first.Equals ("x")) {
+						y = pair_itr->second.Double ();
+					}
+				}
+				if (x > 0.5 && fx <= 0.5) {
+					value = (y - fy) * (0.5 - fx) / (x - fx) + fy;
+				}
+				fx = x;
+				fy = y;
+			}
+			return (true);
+		}
+		speed_flag = !pair_itr->second.Equals ("/>");
+
+		for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+			if (pair_itr->first.Equals ("no")) {
+				code = pair_itr->second.Integer ();
+			}
+		}
+		return (true);
+	}
+	return (false);
+}

@@ -1,0 +1,734 @@
+c TDMET.FOR
+C MS FORTRAN PowerStation 4.0 source code to perform trip distribution
+C   for the Metrolina Travel Model 2013
+C Previously written for the Metrolina Travel Model 2004
+c Written originally February 2002 for the New Orleans Model Update
+c   project.
+
+c  August 2013                   bill allen
+
+C Developed originally in MS Fortran PowerStation 1.0.  Now being
+C  compiled in Compaq Visual Fortran 6.6 (Standard Edition 6.6a).
+C Check the following compiler settings:
+C  under tab "Fortran":
+C   General: Debugging Level=Full, Optimization Level=Full Optimization
+C   Compatibility: Libraries, Other Run-Time Behaviour
+C   Compilation Diagnostics: Undeclared Symbols, Uninitiated Variables
+C   Listing Files: Source Listing, Source Map
+C
+C Or, use the following switches:
+C  /check:bounds /compile_only /dbglibs /debug:full /fpscomp:general
+C  /list:"Debug/" /nologo /optimize:4 /traceback /warn:argument_checking
+C  /warn:declarations /warn:nofileopt /module:"Debug/" /object:"Debug/"
+C  /pdbfile:"Debug/DF60.PDB"
+
+c Limitations:
+c - max. number of zones:                       5,200
+c - highest TAZ or ext station number:          30000
+
+C Modifications:
+c  5 Oct 04  added intrazonal K factor
+c 27 Sep 05  corrected method of incorporating toll in the CT 
+c    	       calculation 
+c  9 Aug 13  made input skim format a user input; read trip ends in
+c            CSV format (with header)
+
+c--------------------------------------------------------------------
+      program tdmet
+      implicit none
+
+      common /dattim/ yr,mon,day,hr,minu,sec,hun,
+     +                month(12),title(10),page
+
+      common /intab/ sformat,tazzone(30000)
+      common /outtab/ zn2taz(5200)
+
+      real*4 attr(5200),
+     1 afac(5200),sumprod,htim(5200),ttim(5200),
+     2 sumattr,normal,bucket,nar,newsum,imp,
+     3 intra(5200),sumattr2,sumint,htol(5200),
+     4 percent,avgimp,totfar,ttimefac,htollfac,imped(5200),
+     5 ht,tt,ct,intrak,kfac
+
+      real*8 pfac,rowsum,x(5200),t(5200),cumtrips,sumimp,sumatt(5200),
+     1  ntlf(500,2),trip(5200),ff(500),vlow,vhi,ffac,prod(5200),zero
+
+      integer*2 iz,jz,zones,iter,stat1,ferr,istop,i,itno,lun16,
+     1 low,hi,impmax,skimmax,line,trace,intzones,tabout,lun15,lun18,
+     2 lun17,strlth
+      integer*4 page,itaz,zn2taz,tazzone,jtaz
+      integer*4 yr,mon,day,hr,minu,sec,hun
+
+      character*80 ffactors,prods,attrs,htime,trips,list,ttime,
+     + htoll,tripdict,tlfd,control,tformat,sformat
+      character*18 verinfo,names(6)
+      character*8  scard(10),title
+      character*4  month
+
+      logical print_te,print_tlf,tlf_file
+
+      namelist /files/ffactors,prods,attrs,htime,ttime,htoll,
+     1 trips,list
+      namelist /parameters/print_te,print_tlf,tlf_file,
+     1 iter,trace,skimmax,tformat,ttimefac,htollfac,intrak,sformat
+
+c Parameters:
+c  print_te     print trip end summary? (def.: T)
+c  print_tlf    print TLF table? (T)
+c  skimmax      max. impedance value on output skim TLF table (90)
+c  iter         number of gravity model iterations (4)
+c  trace        zone to be traced for debugging (none)
+c  tformat      input trip end format (none)
+c  sformat      input skim format (none)
+c  ttimefac     factor on transit time (1.0)
+c  htollfac     factor on highway toll (0.0)
+
+      data print_te,print_tlf/2*.true./,skimmax/90/,zero/0.0/,
+     1 iter/4/,afac/5200*1.0/,lun15,lun16,lun17,lun18/15,16,17,18/
+      data month/'Jan ','Feb ','Mar ','Apr ','May ','Jun ','Jul ',
+     * 'Aug ','Sep ','Oct ','Nov ','Dec '/,trip/5200*0/,
+     * names/'f factor file','hwy time file','trn time file',
+     * 'hwy toll file', 'production file',
+     * 'attraction file'/,cumtrips/0.0/,sumimp/0.0/,
+     * ntlf/1000*0.0/,page/1/,trace/0/,tabout/1/,intrak/1.0/,
+     * ttimefac/1.0/,htollfac/0.0/,tformat/' '/,tlf_file/.false./,
+     * sformat/' '/
+
+C     START OF MAIN CODE
+C
+      verinfo='1.3    10 Sep 2013'
+
+C Check command line for setup file name.
+      call getarg(1,control,stat1)
+      if(stat1.le.0) then
+        write(*,'(/'' Version '',a18)') verinfo
+        write(*,'('' Usage:   tdmet [control-file] '')')
+        stop "Enter the setup file name on the command line."
+      endif
+
+C  Get the system date and time for the header, and display it on
+C   screen as a reference.
+
+      call getdat(yr,mon,day)
+      call gettim(hr,minu,sec,hun)
+      write(*,50) verinfo,hr,minu,sec
+   50 format(/' TDMET ver. ',a18,' started at: ',i2,':',i2.2,':',
+     1 i2.2/)
+
+C  READ setup FILE
+C
+      open(5,err=105,file=control,status='old',form='formatted')
+      read(5,100) (title(i),i=1,10)
+  100 format(10a8)
+      read(5,files)
+      rewind 5
+      read(5,parameters)
+      go to 110
+
+  105 write (*,107)
+  107 format(' TDMET 107 (F): Cannot find the specified',
+     + ' setup file.  I quit.')
+      stop "A fatal error has occurred. Please check listing file."
+  110 continue
+
+c Check input values.
+
+      if (iter .lt. 1) then
+        write(*,9901) iter
+ 9901   format(' ITER is bad.  Value= ',i3,'  I quit.')
+        stop
+      endif
+
+c Check for existence of input files.
+
+      ferr  = 0
+      istop = 0
+      call findit (ffactors,names(1),ferr)
+      call findit (htime,names(2),ferr)
+      call findit (ttime,names(3),ferr)
+      call findit (prods,names(5),ferr)
+      call findit (attrs,names(6),ferr)
+
+      if (ferr .gt. 0) then
+        write(6,9910)
+ 9910   format(' Fatal: one or more of required files is missing.',
+     1    '  I quit.')
+        stop "Fatal error.  Check listing file."
+      endif
+
+c Open input and output files.
+
+      open(11,file=ffactors,status='old')
+      open(13,file=prods,status='old')
+      open(14,file=attrs,status='old')
+      open(15,file=htime,status='old')
+      open(16,file=ttime,status='old')
+
+c Highway toll file is optional.  If user coded HTOLLFAC, then
+c  the toll file should be input.
+
+      ferr = 0
+      if (htollfac .gt. 0.01) then
+        call findit (htoll,names(4),ferr)
+        if (ferr .eq. 0) open(17,file=htoll,status='old')
+      endif
+
+      open(unit=6,file=list,status='unknown')
+      open(unit=18,file=trips,status='unknown',form='formatted')
+
+c Write header to listing file and echo setup file to it.
+
+      write(6,150) day,month(mon),yr,hr,minu,sec,
+     + page
+  150 format(' ',i2,1x,a4,i4,2x,i2,':',i2.2,':',i2.2,16x,'TDMET',
+     +  29x,'Page ',i3/)
+
+      rewind 5
+      do while (.NOT. eof(5))
+        read (5,160,end=165) (scard(i),i=1,10)
+  160   format(10a8)
+        write (6,160) (scard(i),i=1,10)
+      end do
+  165 continue
+      close(5)
+
+c ----------------------------------------------------------------------
+c Read and store F factors.  These are in free format.
+c  NOTE: This version assumes that an F factor is input for every
+c  whole unit of impedance, starting at 1 (1,2,3,...).  It will
+c  interpolate between those integer units.
+
+      write(*,200)
+  200 format(' Reading F factors'/)
+
+      impmax = 0
+  220 read(11,*,end=260) i,ff(i)
+
+      if (i .gt. impmax) impmax = i
+      go to 220
+  260 continue
+      close(11)
+
+c Read and store trip ends.  These define the highest zone number.
+
+      write(*,400)
+  400 format(' Reading trip ends'/)
+
+c Even though input trip ends are in CSV format, for any single run
+c  of this program, we read the trip ends from only 1 column of the
+c  input file.  That requires specifying TFORMAT for each run.
+
+      intzones = 0
+  420 read(13,tformat,end=460,err=470) itaz,iz,prod(iz)
+
+      if (iz .gt. 5200) then
+        write(*,9905) iz,itaz
+ 9905   format(' Production record ',i5,' for TAZ ',i5,' is bad.',
+     +    '  I quit.')
+        stop
+      endif
+
+c Fill the arrays that provide the correspondence between TAZ numbers
+c  and sequential zone numbers.
+
+      zn2taz(iz)    = itaz
+      tazzone(itaz) = iz
+
+      if (iz .gt. zones) zones = iz
+
+      go to 420
+
+  460 continue
+      close(13)
+      go to 520
+
+  470 write(6,480)
+  480 format(' TDMET 480 (F): Problem reading trip end file.  '/
+     *  ' Probably, TFORMAT is not specified correctly.  I quit.')
+      stop "A fatal error has occurred. Please check listing file."
+
+  520 read(14,tformat,end=560) itaz,iz,attr(iz)
+
+      if (iz .gt. 5200) then
+        write(*,9906) iz,itaz
+ 9906   format(' TDMET 9906 (F): Attraction record ',i5,' for TAZ ',
+     +    i5,' is bad.  I quit.')
+      stop "A fatal error has occurred. Please check listing file."
+      endif
+      go to 520
+  560 continue
+      close(14)
+
+c Normalize the attractions to match the total of the productions.
+c  (You can't trust anyone these days.)
+
+      sumprod = 0.0
+      sumattr = 0.0
+      do iz = 1,zones
+        sumprod = sumprod + prod(iz)
+        sumattr = sumattr + attr(iz)
+      end do
+
+      normal = 1.0
+      if (sumattr .gt. 0.01) normal = sumprod/sumattr
+
+      newsum = 0.
+      bucket = 0.5
+      do iz = 1,zones
+        nar      = normal * attr(iz)
+        attr(iz) = nar
+        newsum   = newsum + attr(iz)
+      end do
+
+c Write short report.
+
+      call header
+      write(6,590) sumprod,sumattr,newsum
+  590 format(' Report of Trip End Normalization'//'  Sum of ',
+     1 'productions = ',t35,f10.0/'  Sum of original attractions = ',
+     2 t35,f10.0,/'  Sum of revised attractions = ',t35,f10.0/)
+
+c -------------------------------------------------------------------
+c Now start the main iteration loop.  Assume we will run ITER number
+c  of iterations, regardless of convergence.  Since "ITER" is the
+c  number of REPETITIONS, we must add 1 to the input value in order
+c  to also do an initial run.
+
+      iter = iter + 1
+      do 4900 itno = 1,iter
+        if (itno .eq. 1) then
+          write(*,1000)
+ 1000     format(' Now on base application'/)
+        else
+          WRITE(*,1050) itno-1
+ 1050     FORMAT(' ','Now on Iteration ',I3/)
+        endif
+
+c Initialize.
+
+        do i = 1,zones
+          sumatt(i) = 0.0
+        end do
+
+c Start big loop on origin zones.
+
+        do 3900 iz = 1,zones
+          itaz = zn2taz(iz)
+          if (mod(itaz,10) .eq. 0 .or. iz .eq. zones) WRITE(*,1200) ITAZ
+ 1200     FORMAT('+','  Processing Origin Zone ',I5)
+          bucket = 0.5
+
+c Initialize the skim arrays.
+
+          do jz = 1,zones
+            htim(jz) = 0.0
+            ttim(jz) = 0.0
+            htol(jz) = 0.0
+          end do
+
+c Read a row from the skim tables.  Only read toll table if toll coeff
+c  is non-zero (logically, if it is non-zero, it must be positive).
+
+          call tcintab(lun15,itaz,htim)
+          call tcintab(lun16,itaz,ttim)
+          if (htollfac .gt. 0.01) call tcintab(lun17,itaz,htol)
+
+          rowsum = 0.0
+
+c Start first loop on destination zones.
+
+          do 1900 jz = 1,zones
+            jtaz = zn2taz(jz)
+
+c If this is an intrazonal interchange, use the intrazonal K factor.
+
+            kfac = 1.0
+            if (jz .eq. iz) kfac = intrak
+
+c Get skims and compute composite time.
+c Change of 27 Sep 05: correct how tolls are incorporated.  HTOLLFAC 
+c  is the value of time, expressed in cents/minute.
+
+c            if (iz .le. 4) write(6,9001) iz,jz,itaz,jtaz,htim(jz)
+c 9001       format(' i,j,time: ',4i8,f10.4)
+
+            if (htim(jz) .lt. 0.01 .and. prod(iz) .gt. 0.01 .and.
+     +        attr(jz) .gt. 0.01) then
+              write(6,1400) itaz,jtaz
+ 1400         format(' TDMET 1400 (F): Zero highway time for ',i5,
+     +          ' - ',i5,'  I quit.')
+           stop "A fatal error has occurred. Please check listing file."
+            end if
+
+            ht  = 0.0
+            tt  = 0.0
+            ct  = 0.0
+            imp = 0.0
+
+            if (htim(jz) .gt. 0.001) ht = 1/htim(jz)
+            if (ttim(jz) .gt. 0.001) tt = 1/ttim(jz)
+
+            ct = ht + ttimefac*tt
+            if (ct .gt. 0.001) imp = 1.0 / ct
+            if (htollfac .gt. 0.01) imp = imp + htol(jz)/htollfac 
+            imped(jz) = imp
+
+c Use the impedance value to look up the F factor with
+c  linear interpolation.
+
+            low = max0(int(imp),1)
+            low = imin0(low,impmax)
+            hi  = imin0(low+1,impmax)
+
+            vlow = ff(low)
+            vhi  = ff(hi)
+
+            ffac = vlow - (imp - low)*(vlow - vhi)
+            ffac = max(ffac,zero)
+
+c Compute the basic accessibility statistic for this O/D pair:
+c   Aj * Fij * AFj * K.  Sum it for this row.
+
+            x(jz)  = attr(jz) * ffac * afac(jz) * kfac
+            rowsum = rowsum + x(jz)
+
+c While we're in this loop, clear out the T array.
+
+            t(jz) = 0.0
+
+c Trace.
+
+            if (itaz .eq. trace) then
+              jtaz = zn2taz(jz)
+              write(6,9801) itno,itaz,jtaz,imp,low,hi,ffac,
+     1         afac(jz),x(jz),rowsum
+ 9801         format(i2,2i6,f7.2,2i3,f15.3,f8.3,f13.2,f12.0)
+            endif
+
+c End first JZ loop.
+
+ 1900     continue
+
+c Compute "production factor" for this row to save some calculations
+c  later.
+
+          pfac = 0.0
+          if (rowsum .gt. 0.0001) pfac = prod(iz)/rowsum
+
+c Start second JZ loop.
+
+          do 2900 jz = 1,zones
+
+c Compute trips and sum attractions.
+
+            t(jz)      = pfac * x(jz)
+            sumatt(jz) = sumatt(jz) + t(jz)
+
+c Trace.
+
+            if (itaz .eq. trace) then
+              jtaz = zn2taz(jz)
+              write(6,9802) itno,itaz,jtaz,prod(iz),pfac,t(jz),
+     1          sumatt(jz)
+ 9802         format(i2,2i6,f10.3,e15.6,f10.3,f10.3)
+            endif
+
+c If this is the last iteration:
+c  Accumulate trips and skim values for new TLFs and intrazonal
+c  arrays.
+
+            if (iter .eq. itno) then
+              imp = imped(jz)
+              low = max0(int(imp),1)
+              low = imin0(low,500)
+              ntlf(low,1) = ntlf(low,1) + t(jz)
+              ntlf(low,2) = ntlf(low,2) + t(jz) * imp
+
+              if (iz .eq. jz) intra(jz) = intra(jz) + t(jz)
+
+c  Also, accumulate trips in the output array.
+
+              trip(jz) = t(jz)
+            endif
+
+c End second JZ loop.
+
+ 2900     continue
+
+c If this is the last iteration, write this row of the output trip
+c  table.
+
+          if (iter .eq. itno) call tcoutab(lun18,itaz,zones,tabout,trip)
+
+c End IZ loop.
+
+ 3900   continue
+
+c Do another JZ loop to compute the (cumulative) attraction factors.
+
+        do jz = 1,zones
+          if (sumatt(jz) .gt. 0.0001) afac(jz) =
+     1     afac(jz) * attr(jz)/sumatt(jz)
+        end do
+
+c Rewind skims and reposition at start of data.
+
+        rewind(15)
+        rewind(16)
+        if (htollfac .gt. 0.000001) rewind(17)
+
+c End of iteration loop.
+
+ 4900 continue
+
+c -------------------------------------------------------------------
+c All done with the iterations, write out the reports.  First, close
+c  the input skim and output trip files.
+
+      close(15)
+      close(16)
+      if (htollfac .gt. 0.000001) close(17)
+      close(18)
+
+c If desired, print combination trip end/attraction comparison
+c  report.
+
+      if (print_te) then
+        sumprod  = 0.0
+        sumattr  = 0.0
+        sumattr2 = 0.0
+        sumint   = 0.0
+
+        line = 51
+        do 5400 i = 1,zones
+          itaz = zn2taz(i)
+          if (line .gt. 50) then
+            call header
+            write(6,5100)
+ 5100       format(t12,'Input',t26,'Input',t40,'Final'/' Zone',3x,
+     1       ' Productions   Attractions   Attractions   Intrazonals'/)
+            line = 1
+          endif
+
+          sumprod  = sumprod + prod(i)
+          sumattr  = sumattr + attr(i)
+          sumattr2 = sumattr2 + sumatt(i)
+          sumint   = sumint + intra(i)
+
+          write(6,5200) itaz,prod(i),attr(i),sumatt(i),intra(i)
+ 5200     format(i5,5x,f7.0,7x,f7.0,7x,f7.0,8x,f6.0)
+          line = line + 1
+ 5400   continue
+
+c Write totals.
+
+        write(6,5500) sumprod,sumattr,sumattr2,sumint
+ 5500   format(//'Total   ',f9.0,5x,f9.0,5x,f9.0,6x,f8.0)
+
+      endif
+
+c If user requested TLF file output (tlf_file = true), create
+c  its name automatically, from the listing file name.
+
+      if (tlf_file) then
+        strlth = len_trim(list) - 4
+        tlfd   = list(1:strlth) // '.dat'
+        open(21,file=tlfd,status='unknown',form='formatted')
+      endif
+
+c If desired, write TLF reports and average trip length.
+
+      if (print_tlf) then
+        line = 51
+        do 5900 i = 1,skimmax
+          if (line .gt. 50) then
+            call header
+            write(6,5600)
+ 5600       format('Skim Val.  Trips   Percent   Cum. Trips',
+     1        '       F Factor'/)
+            line = 1
+          endif
+
+          cumtrips = cumtrips + ntlf(i,1)
+          percent  = 100*ntlf(i,1)/sumprod
+          sumimp   = sumimp + ntlf(i,2)
+
+          write(6,5700) i,ntlf(i,1),percent,cumtrips,ff(i)
+ 5700     format(i4,5x,f8.0,4x,f5.2,6x,f8.0,f15.2)
+          line = line + 1
+
+          if (tlf_file) write(21,5800) i,percent
+ 5800     format(i5,f8.4)
+
+ 5900   continue
+
+        if (tlf_file) close (21)
+
+c Get the total for values beyond SKIMMAX.
+
+        totfar = 0.0
+        do i = skimmax+1,500
+          totfar = totfar + ntlf(i,1)
+        end do
+        percent = 100*totfar/sumprod
+        write(6,5920) skimmax,totfar,percent,sumprod
+ 5920   format(' Over ',i3,f8.0,4x,f5.2,6x,f8.0)
+
+c Write the average impedance.
+
+        avgimp = sumimp/cumtrips
+
+        write(6,5950) avgimp
+ 5950   format(//'Average Impedance Value:  ',f6.2)
+
+
+      endif
+
+c Write TRIPS dictionary file.  Construct a name from the input
+c  file name for TRIPS, then open file for output.
+
+      strlth   = len_trim(trips) - 4
+      tripdict = trips(1:strlth) // '.DCC'
+      open(20,file=tripdict,status='unknown',form='formatted')
+
+      write(20,6000)
+ 6000 format(/'0 header'/
+     + '"From",I,1,10,0,10,0,,,"",,Sum,'/
+     + '"To",I,11,10,0,10,0,,,"",,Sum,'/
+     + '"Trips",R,21,14,0,14,3,,,"",,Sum,')
+      close (20)
+
+      stop
+      end
+
+C -------------------------------------------------------------------
+C  Subroutine 'FINDIT' to determine if input files really exist.
+
+      subroutine findit (fno,fname,ferr)
+
+      integer*2 ferr
+      character*80 fno
+      character*18 fname
+      logical infile
+
+      inquire (file=fno,exist=infile)
+      if (.NOT. infile) then
+        write(6,100) fname,fno 
+  100   format (' FINDIT 100 (W): Cannot find ',a18,': '/a80/)
+        ferr=1
+      end if
+      return
+      end
+C-------------------------------------------------------------------
+      subroutine header
+
+      implicit integer (a-z)
+
+      common /dattim/ yr,mon,day,hr,minu,sec,hun,
+     +                month(12),title(10),page
+
+      character*4 month
+      character*8 title
+      integer*4 yr,mon,day,hr,minu,sec,hun,page,i
+ 
+C Write header with page eject (ASCII 12) as control character.
+
+      page = page+1
+      write (6,100) char(12),(title(i),i=1,10),day,month(mon),yr,
+     +  hr,minu,sec,page
+  100 format(a1,9a8,a7//i2,1x,a4,i4,2x,i2,':',i2.2,':',i2.2,16x,
+     +  'TDMET',28x,'Page ',i3/)
+
+      return
+      end
+
+C-------------------------------------------------------------------
+c TCINTAB
+c Subroutine to read a row of ASCII matrix data, as exported
+c  from TransCAD.  This routine checks
+c  to be sure the row number read is the one requested and
+c  returns that entire row's worth of data.  The main
+c  (calling) program must already have opened the file as
+c  'formatted'.  Each file must contain only one table
+c  and it must be in "row major" order (ascending row sort).
+
+      subroutine tcintab(lun,rownum,rowdata)
+      common /intab/ sformat,tazzone(30000)
+      integer*2 lun
+      integer*4 jz,rownum,tazzone,itaz,jtaz
+      real*4    rowdata(5200),x
+      character*80 sformat
+
+   50 read(lun,sformat,end=200) itaz,jtaz,x
+
+c If the data value (x) is an integer value with no decimals at
+c  all, TransCAD writes it out as "99", not "99.0" and it will 
+c  not be read properly.  A value of "99" would actually be read
+c  as 0.0099.  Check for that and fix it.
+
+      if (x .lt. 0.05) then
+	  write(6,100) itaz,jtaz,x
+  100   format(' Skim check: i,j,input: ',2i7,f8.4)
+        x = 1
+      endif
+      
+      if (itaz .eq. rownum) then
+        jz = tazzone(jtaz)
+        rowdata(jz) = x
+      else
+        backspace lun
+        return
+      endif
+      go to 50
+
+  200 continue
+
+      return
+      end
+c--------------------------------------------------------------------
+c TCOUTAB
+c Subroutine to write a row of ASCII matrix data.  Multiple tables
+c  can be written on each record.  Output uses the following layout:
+c  I, J, value1, value2, value3, ...  and uses the following format:
+c  i10, i10, f10.2, f10.2, f10.2, ...
+
+      subroutine tcoutab(lun,rownum,maxzones,ntabout,outrow)
+      common /outtab/ zn2taz(5200)
+      integer*2 jz,lun,ntabout,maxzones,k
+      integer*4 rownum,zn2taz,jtaz
+      real*8 outrow(5200,ntabout),tot
+
+c This subroutine can handle a maximum of 10 output tables.  If user
+c  asks for more, quit with an error message.
+
+      if (ntabout .gt. 10) then
+        write(*,50) ntabout
+   50   format(' NTABOUT exceeds limit of 10, value = ',i4,'  I quit.')
+        stop
+      endif
+
+c Assume this subroutine is called once per row, to write all
+c  of the output data for that row.  Loop on MAXZONES to
+c  write the records for each column.
+
+      do 1000 jz = 1,maxzones
+        jtaz = zn2taz(jz)
+
+c Write a record only if any table value is > 0.
+
+        tot = 0.0
+        do k = 1,ntabout
+          tot = tot + outrow(jz,k)
+        end do
+
+        if (tot .gt. 0.000001) then
+          write(lun,100) rownum,jtaz,(outrow(jz,k),k=1,ntabout)
+  100     format(i10,i10,10f14.8)
+        endif
+
+ 1000 continue
+
+      return
+      end
+
+

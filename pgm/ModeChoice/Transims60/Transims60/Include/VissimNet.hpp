@@ -1,0 +1,83 @@
+//*********************************************************
+//	VissimNet.hpp - VISSIM network conversion
+//*********************************************************
+
+#ifndef VISSIMNET_HPP
+#define VISSIMNET_HPP
+
+#include "Data_Service.hpp"
+#include "Arcview_File.hpp"
+
+//---------------------------------------------------------
+//	VissimNet - execution class definition
+//---------------------------------------------------------
+
+class VissimNet : public Data_Service
+{
+public:
+	VissimNet (void);
+	virtual ~VissimNet (void);
+
+	virtual void Execute (void);
+	//virtual void Page_Header (void);
+
+protected:
+	enum VissimNet_Keys { 
+		VISSIM_XML_FILE = 1, KEEP_CONNECTOR_LIST, NEW_VISSIM_XML_FILE, NEW_ARC_LINK_FILE
+	};
+
+	virtual void Program_Control (void);
+	virtual int Put_Location_Data (Location_File &file, Location_Data &data);
+
+private:
+	//enum VissimNet_Reports { REPORT = 1, };
+
+	bool input_flag, arc_link_flag;	
+	bool nodes_flag, node_flag, links_flag, link_flag, lanes_flag, lane_flag, speeds_flag, speed_flag, speed_pts_flag, speed_pt_flag;
+	bool geo_flag, points_flag, point_flag, linkseg_flag, linksegs_flag, types_flag, type_flag, veh_types_flag, veh_type_flag;
+	bool signs_flag, sign_flag, link_spds_flag, link_spd_flag, veh_spds_flag, veh_spd_flag, lots_flag, lot_flag;
+	bool detectors_flag, detector_flag, veh_class_flag;
+
+	int org_field, des_field;
+
+	int code, type, link, node, zone, parking, detector, lane;
+	double fx, fy, value, length, offset;
+	Int_Key_Map keep_list;
+	Int_Set connect_list;
+	Integers link_flags;
+
+	Link_Data link_data;
+	Node_Data node_data;
+	Dir_Data dir_data;
+	Shape_Data shape_data;
+
+	Arcview_File arc_link_file;
+
+	Points points;
+	Int2_Key ab_key;
+	Int_Map connect_link;
+	Int_Map type_map;
+	Int_Map vehtype_map;
+	Int_Map speed_map;
+
+	String_Pairs string_pairs;
+	String_Pair_Itr pair_itr;
+
+	void Read_Vissim (void);
+	void Write_Vissim (void);
+
+	bool Link_Fields (void);
+	bool Node_Fields (void);
+	bool Speed_Fields (void);
+	bool Link_Speed_Fields (void);
+	bool Link_Behavior (void);
+	bool Veh_Type_Fields (void);
+	bool Sign_Fields (void);
+	bool Parking_Fields (void);
+	bool Detector_Fields (void);
+	void Connections (void);
+	void Process_Links (void);
+	
+	Db_File input_file, output_file;
+};
+#endif

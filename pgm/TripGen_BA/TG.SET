@@ -1,0 +1,57 @@
+Metrolina Trip Generation, 2010 Run: 2999 zones
+
+&files
+  sefile      = '..\SE2010_OLDTAZ_130315.csv'
+  distcorfile = 'dist_to_extsta_2010.txt'
+  xvolfile    = 'extstavol10.asc'
+  atfile      = 'taz_atype.asc'
+  pumafile    = 'PUMAequiv.prn'
+
+  hhfile      = 'hhdetail.asc'
+  prodfile    = 'productions.asc'
+  attrfile    = 'attractions.asc'
+  xxfile      = 'xxfactor.asc'
+  list        = 'tg090513.prn'
+/
+
+&parameters
+  savescr  = .false.
+  zTAZ     = 1
+  zPOP_TOT = 2
+  zPOP_HHS = 3
+  zPOP_GRP = 4
+  zHH      = 5
+  zMED_INC = 6
+  zLOIND   = 7
+  zHIIND   = 8
+  zRTL     = 9
+  zHWY     = 10
+  zLOSVC   = 11
+  zHISVC   = 12
+  zOFFGOV  = 13
+  zEDUC    = 14
+  zEMP_TOT = 15
+  zSTU_K8  = 16
+  zSTU_HS  = 17
+  zSTU_CU  = 18
+  zDORM    = 19
+  zAREA    = 20
+  do_gq    = .true.
+/
+
+&coeffs
+/
+
+&special
+/
+
+&equiv
+  cbd         = 10001,-10003,10005,-10025,10039,10059,10103,10104,10106,
+                10112,10115,10117,-10120,10139,-10144,10152,10174,10177,
+                11025
+                
+  uptown      = 10001,-10025,10106,10117,10118,10120,10139,10142,10143,
+  		10149,10150,10174,-10177,10184,-10186,10188,10189,11025,11026  		
+/
+
+

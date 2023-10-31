@@ -1,0 +1,73 @@
+//*********************************************************
+//	Transfer_Fare.cpp - previous route mode and fare zone
+//*********************************************************
+
+#include "Path_Builder.hpp"
+
+//---------------------------------------------------------
+//	Transfer_Fare
+//---------------------------------------------------------
+
+bool Path_Builder::Transfer_Fare (Path_Ptr path_ptr, int &mode, int &zone)
+{
+	int from_index, from_type, from_path, from_dir, prev_stop;
+
+	Path_Data *from_ptr;
+	Access_Data *access_ptr;
+	Line_Data *line_ptr;
+	Line_Stop_Itr stop_itr;
+
+	prev_stop = path_ptr->From ();
+
+	//----- trace the path ----
+
+	for (from_ptr = path_ptr; from_ptr->Type () != FROM_ID;) {
+
+		from_index = from_ptr->From ();
+		from_type = from_ptr->Type ();
+		from_path = from_ptr->Path ();
+		from_dir = from_ptr->Dir ();
+
+		if (from_type == DIR_ID) {
+			from_ptr = &link_path[from_index];
+		}
+		else if (from_type == NODE_ID) {
+			from_ptr = &node_path [from_path][from_index];
+		}
+		else if (from_type == STOP_ID) {
+			prev_stop = from_index;
+
+			if (from_ptr->Mode () == WAIT_MODE) {
+				from_ptr = &board_path [from_path][from_index];
+			} else {
+				from_ptr = &alight_path [from_path][from_index];
+			}
+		}
+		else if (from_type == ROUTE_ID) {
+			line_ptr = &exe->line_array [from_index];
+			mode = line_ptr->Mode ();
+
+			for (stop_itr = line_ptr->begin (); stop_itr != line_ptr->end (); stop_itr++) {
+				if (stop_itr->Stop () == prev_stop) {
+					zone = stop_itr->Zone ();
+					return (true);
+				}
+			}
+			break;
+		}
+		else if (from_type == ACCESS_ID) {
+			access_ptr = &exe->access_array[from_index];
+			from_type = access_ptr->Type ((from_dir == 0));
+			from_index = access_ptr->ID ((from_dir == 0));
+
+			if (from_type == NODE_ID) {
+				from_ptr = &node_path[from_path][from_index];
+			}
+			else if (from_type == STOP_ID) {
+				from_ptr = &alight_path[from_path][from_index];
+				prev_stop = from_ptr->From ();
+			}
+		}
+	}
+	return (false);
+}

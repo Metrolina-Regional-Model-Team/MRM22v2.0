@@ -1,0 +1,50 @@
+//*********************************************************
+//	Control.cpp - process the control parameters
+//*********************************************************
+
+#include "VissimPlans.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void VissimPlans::Program_Control (void)
+{
+	String key;
+
+	//---- create the network files ----
+
+	Data_Service::Program_Control ();
+
+	new_file = System_Plan_File (true);
+
+	Print (2, String ("%s Control Keys:") % Program ());
+
+	//---- vissim path file ----
+
+	key = Get_Control_String (VISSIM_PATH_FILE);
+
+	if (!key.empty ()) {
+		Print (1);
+
+		path_file.File_Type ("VISSIM Path File");
+
+		path_file.Open (Project_Filename (key));
+	}
+
+	//---- transims path file ----
+
+	key = Get_Control_String (NEW_TRANSIMS_PATH_FILE);
+
+	if (!key.empty ()) {
+		Print (1);
+		path_flag = true;
+
+		path_plan.File_Type ("New TRANSIMS Path File");
+
+		if (Check_Control_Key (NEW_TRANSIMS_PATH_FORMAT)) {
+			path_plan.Dbase_Format (Get_Control_String (NEW_TRANSIMS_PATH_FORMAT));
+		}
+		path_plan.Create (Project_Filename (key));
+	}
+}

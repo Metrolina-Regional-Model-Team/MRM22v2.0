@@ -1,0 +1,301 @@
+//*********************************************************
+//	Read_Plans.cpp - read the plan file
+//*********************************************************
+
+#include "ModeChoice.hpp"
+
+//---------------------------------------------------------
+//	Read_Plans
+//---------------------------------------------------------
+
+void ModeChoice::Read_Plans (void)
+{
+	int i, num;
+	bool park_flag, crowd_flag;
+
+	Trip_Index trip_index, min_index;
+	Trip_Index_Array read_index;
+	Trip_Index_Itr index_itr;
+	Plan_File_Itr plan_itr;
+	Plan_Skim_Data_Itr data_itr;
+	Plan_Data plan, *plan_ptr;
+	Plan_Array plan_array;
+	Plan_Tour_Array plan_tours;
+	Plan_Tour_Ptr tour_ptr;
+	Plan_Itr tour_itr;
+	Plan_File *new_plan_file = 0;
+
+	park_flag = ((System_File_Flag (NEW_PARK_DEMAND) && save_flag) || penalty_update_flag);
+
+	new_plan_flag = System_File_Flag (NEW_PLAN);
+
+	if (new_plan_flag) {
+		new_plan_file = System_Plan_File (true);
+	}
+	memory_flag = false;
+
+	if (calib_flag) {
+		if (save_flag && new_plan_flag) {
+			Show_Message (String ("Iteration %d Writing Plans -- Record") % iteration);
+			skim_memory_flag = false;
+		} else {
+			Show_Message (String ("Iteration %d Reading Plans -- Record") % iteration);
+		}
+		if (iteration > 1) {
+			if (skim_memory_flag) {
+				memory_flag = true;
+				for (data_itr = plan_skim_arrays.begin (); data_itr != plan_skim_arrays.end (); data_itr++) {
+					(*data_itr)->Rewind ();
+				}
+			} else {
+				for (plan_itr = plan_files.begin (); plan_itr != plan_files.end (); plan_itr++) {
+					(*plan_itr)->Rewind ();
+				}
+			}
+
+			//---- clear the ridership and parking demand ----
+
+			if (rider_flag) {
+				line_array.Clear_Ridership ();
+			}
+			if (penalty_update_flag) {
+				park_demand_array.Zero_Demand ();
+			}
+		}
+	} else {
+		Show_Message ("Reading Plan Files -- Record");
+	}
+	Set_Progress ();
+
+	//---- process each trip ----
+
+	num = (int) plan_files.size ();
+
+	index_array.assign (num, trip_index);
+	read_index.assign (num, trip_index);
+
+	if (tour_choice_flag) {
+		plan_tours.assign (num, plan_array);
+	}
+	plan_array.assign (num, plan);
+
+	while (trip_index.Household () < MAX_INTEGER) {
+		Show_Progress ();
+
+		//---- read the next ----
+
+		min_index.Household (MAX_INTEGER);
+
+		for (i = 0, index_itr = index_array.begin (); index_itr != index_array.end (); index_itr++, i++) {
+
+			if (*index_itr <= trip_index) {
+				if (memory_flag) {
+					if (plan_skim_arrays [i]->Read_Record ()) {
+						plan_skim_arrays [i]->Get_Index (*index_itr);
+						index_skims [i]->Record (plan_skim_arrays [i]->Record ());
+					} else {
+						(*index_itr).Household (MAX_INTEGER);
+					}
+				} else {
+					if (read_index [i].Household () == 0) {
+						if (plan_files [i]->Read_Plan (plan_array [i])) {
+							plan_array [i].Get_Index (read_index [i]);
+						} else {
+							read_index [i].Household (MAX_INTEGER);
+						}
+					}
+					*index_itr = read_index [i];
+					if (read_index [i].Household () == MAX_INTEGER) continue;
+
+					index_skims [i]->Put_Data (plan_array [i]);
+					plan_tours [i].assign (1, plan_array [i]);
+
+					plan_ptr = &plan_tours [i][0];
+					crowd_flag = false;
+
+					if (plan_ptr->Transit_Mode_Flag () && System_File_Flag (RIDERSHIP)) {
+						Dtime time, ttime;
+						Plan_Leg_Itr leg_itr, leg0_itr;
+
+						time = plan_ptr->Depart ();
+
+						for (leg_itr = plan_ptr->begin (); leg_itr != plan_ptr->end (); leg_itr++, time += ttime) {
+							ttime = leg_itr->Time ();
+
+							if (leg_itr->Mode () == WAIT_MODE) {
+								if (leg_itr->Type () == ROUTE_ID) {
+									Line_Data *line_ptr;
+									Line_Stop_Itr line_stop_itr;
+									Line_Run_Itr run_itr;
+									Int_Map_Itr map_itr;
+
+									map_itr = line_map.find (leg_itr->ID ());
+									if (map_itr != line_map.end ()) {
+										line_ptr = &line_array [map_itr->second];
+										if (line_ptr->Mode () == RAPIDRAIL || line_ptr->Mode () == REGIONRAIL) {
+
+											leg0_itr = leg_itr - 1;
+
+											map_itr = stop_map.find (leg0_itr->ID ());
+											if (map_itr != stop_map.end ()) {
+												int stop = map_itr->second;
+
+												for (line_stop_itr = line_ptr->begin (); line_stop_itr != line_ptr->end (); line_stop_itr++) {
+													if (line_stop_itr->Stop () == stop) {
+														for (run_itr = line_stop_itr->begin (); run_itr != line_stop_itr->end (); run_itr++) {
+															if (run_itr->Schedule () > time) {
+																int penalty = run_itr->Penalty ();
+
+																if (penalty >= MAX_PENALTY) {
+																	plan_ptr->Zero_Totals ();
+																	crowd_flag = true;
+																} else if (penalty > 0) {
+																	plan_ptr->Impedance (plan_ptr->Impedance () + Resolve (penalty));
+																}
+																break;
+															}
+														}
+														break;
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					if (plan_files [i]->Read_Plan (plan_array [i])) {
+						plan_array [i].Get_Index (read_index [i]);
+
+						if (tour_choice_flag) {
+							while (read_index [i].Household () < MAX_INTEGER) {
+								if (read_index [i].Household () != index_itr->Household () || read_index [i].Person () != index_itr->Person () ||
+									read_index [i].Tour () != index_itr->Tour ()) {
+									break;
+								}
+								if (!crowd_flag) {
+									index_skims [i]->Add_Leg (plan_array [i]);
+									plan_tours [i].push_back (plan_array [i]);
+								}
+
+								if (plan_files [i]->Read_Plan (plan_array [i])) {
+									plan_array [i].Get_Index (read_index [i]);
+								} else {
+									read_index [i].Household (MAX_INTEGER);
+								}
+							}
+						}
+					} else {
+						read_index [i].Household (MAX_INTEGER);
+					}
+					if (skim_memory_flag) {
+						plan_skim_arrays [i]->Record (index_skims [i]->Record ());
+						plan_skim_arrays [i]->Add_Record ();
+					}
+				}
+			}
+			if (*index_itr < min_index) {
+				min_index = *index_itr;
+			}
+		}
+		if (min_index.Household () == MAX_INTEGER) break;
+
+		trip_index = min_index;
+
+		//---- mode choice ----
+
+		num = Choice_Data (trip_index);
+
+		//---- save the plan ----
+
+		if (num >= 0) {
+			tour_ptr = &plan_tours [num];
+
+			if (save_flag && new_plan_flag) {
+				int mode = -1;
+
+				for (tour_itr = tour_ptr->begin (); tour_itr != tour_ptr->end (); tour_itr++) {
+					if (auto_occ_flag && tour_itr->Mode () >= HOV2_MODE && tour_itr->Mode () <= HOV4_MODE) {
+						if (mode < 0) {
+							Veh_Type_Data *veh_type_ptr = &veh_type_array [tour_itr->Veh_Type ()];
+							mode = tour_itr->Mode ();
+
+							if (veh_type_ptr->Occupancy () > 0) {
+								double occ = 100.0 / veh_type_ptr->Occupancy () + veh_type_buckets [tour_itr->Veh_Type ()];
+								int veh_mode = (int) occ;
+								veh_type_buckets [tour_itr->Veh_Type ()] = occ - veh_mode;
+								if (veh_mode == 0) {
+									mode = RIDE_MODE;
+								}
+							}
+						}
+						tour_itr->Mode (mode);
+						if (mode == RIDE_MODE) {
+							tour_itr->Vehicle (-1);
+							tour_itr->Veh_Type (0);
+						}
+					}
+					if (!new_plan_file->Write_Plan (*tour_itr)) {
+						Error ("Writing New Plan File");
+					}
+				}
+			}
+
+			//---- save the ridership data ----
+
+			if (rider_flag) {
+				for (tour_itr = tour_ptr->begin (); tour_itr != tour_ptr->end (); tour_itr++) {
+					if (tour_itr->Transit_Mode_Flag ()) {
+						line_array.Sum_Ridership (*tour_itr);
+					}
+				}
+			}
+
+			//---- set the parking demand ----
+			
+			if (park_flag) {
+				tour_itr = tour_ptr->begin ();
+
+				int mode = tour_itr->Mode ();
+				//if (mode == PNR_OUT_MODE || mode == DRIVE_MODE || mode == HOV2_MODE || mode == HOV3_MODE || mode == HOV4_MODE) {
+				if (mode == PNR_OUT_MODE) {
+					int index;
+					bool flag;
+					Dtime tod, time, duration;
+					Plan_Leg_Itr leg_itr;
+
+					tod = tour_itr->Start ();
+					flag = false;
+					index = 0;
+					time = 0;
+
+					for (leg_itr = tour_itr->begin (); leg_itr != tour_itr->end (); leg_itr++) {
+						tod += leg_itr->Time ();
+						if (leg_itr->Type () == PARKING_ID) {
+							if (flag) {
+								time = tod;
+								index = leg_itr->ID ();
+							} else {
+								flag = true;
+							}
+						}
+					}
+					if (index > 0) {
+						Int_Map_Itr itr = parking_map.find (index);
+
+						if (itr != parking_map.end ()) {
+							duration = 2 * (tod - time) + tour_itr->Activity ();
+
+							if (park_demand_array.Check_Parking_Type (itr->second)) {
+								park_demand_array.Parking_Duration (itr->second, time, duration);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if (!calib_flag) End_Progress ();
+}

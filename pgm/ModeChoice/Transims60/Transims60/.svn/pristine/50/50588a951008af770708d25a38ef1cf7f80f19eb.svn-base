@@ -1,0 +1,484 @@
+//********************************************************* 
+//	Planp_Skim_File.cpp - Plan Skim File Input/Output
+//*********************************************************
+
+#include "Plan_Skim_File.hpp"
+
+//-----------------------------------------------------------
+//	Plan_Skim_Base constructors
+//-----------------------------------------------------------
+
+Plan_Skim_Base::Plan_Skim_Base ()
+{
+	base = 0;
+	Setup ();
+}
+
+//-----------------------------------------------------------
+//	Plan_Skim_File constructors
+//-----------------------------------------------------------
+
+Plan_Skim_File::Plan_Skim_File (Access_Type access, string format) : 
+	Db_Header (access, format)
+{
+	Set_Base_File (this);
+}
+
+Plan_Skim_File::Plan_Skim_File (string filename, Access_Type access, string format) : 
+	Db_Header (access, format)
+{
+	Set_Base_File (this);
+
+	Open (filename);
+}
+
+Plan_Skim_File::Plan_Skim_File (Access_Type access, Format_Type format) : 
+	Db_Header (access, format)
+{
+	Set_Base_File (this);
+}
+
+Plan_Skim_File::Plan_Skim_File (string filename, Access_Type access, Format_Type format) : 
+	Db_Header (access, format)
+{
+	Set_Base_File (this);
+
+	Open (filename);
+}
+
+//-----------------------------------------------------------
+//	Setup
+//-----------------------------------------------------------
+
+void Plan_Skim_Base::Setup (void)
+{
+	if (base != 0) {
+		base->File_Type ("Plan Skim File");
+		base->File_ID ("Skim");
+	}
+	hhold = person = tour = trip = start = end = duration = origin = destination = purpose = mode = -1;
+	constraint = priority = vehicle = veh_type = type = transfers = xwait = num_legs = -1;
+	depart = arrive = walk = drive = transit = wait = other = length = cost = impedance = -1;
+}
+
+//---------------------------------------------------------
+//	Get_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Get_Data (Plan_Data &plan_rec)
+{
+	plan_rec.Household (Household ());
+	plan_rec.Person (Person ());
+	plan_rec.Tour (Tour ());
+	if (plan_rec.Tour () < 1) plan_rec.Tour (1);
+	plan_rec.Trip (Trip ());
+
+	plan_rec.Start (Start ());
+	if (plan_rec.Start () < 0) {
+		plan_rec.Start (0);
+	}
+	plan_rec.End (End ());
+	plan_rec.Duration (Duration ());
+
+	plan_rec.Origin (Origin ());
+	plan_rec.Destination (Destination ());
+
+	plan_rec.Purpose (Purpose ());
+	plan_rec.Constraint (Constraint ());
+	plan_rec.Priority (Priority ());
+
+	plan_rec.Mode (Mode ());
+	plan_rec.Vehicle (Vehicle ());
+	plan_rec.Veh_Type (Veh_Type ());
+	plan_rec.Type (Type ());
+
+	plan_rec.Depart (Depart ());
+	if (plan_rec.Depart () < 0) {
+		plan_rec.Depart (0);
+	}
+	plan_rec.Arrive (Arrive ());
+	plan_rec.Activity (Activity ());
+
+	plan_rec.Walk (Walk ());
+	plan_rec.Drive (Drive ());
+	plan_rec.Transit (Transit ());
+	plan_rec.Wait (Wait ());
+	plan_rec.Other (Other ());
+	plan_rec.Length (Length ());
+	plan_rec.Cost (Cost ());
+	plan_rec.Impedance (Impedance ());
+}
+
+//---------------------------------------------------------
+//	Put_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Put_Data (Plan_Data &plan_rec)
+{
+	Household (plan_rec.Household ());
+	Person (plan_rec.Person ());
+	Tour (plan_rec.Tour ());
+	Trip (plan_rec.Trip ());
+
+	if (plan_rec.Start () < 0) {
+		plan_rec.Start (0);
+	}
+	Start (plan_rec.Start ());
+	End (plan_rec.End ());
+	Duration (plan_rec.Duration ());
+
+	Origin (plan_rec.Origin ());
+	Destination (plan_rec.Destination ());
+
+	Purpose (plan_rec.Purpose ());
+	Mode (plan_rec.Mode ());
+	Constraint (plan_rec.Constraint ());
+	Priority (plan_rec.Priority ());
+
+	if (plan_rec.Vehicle () < 0 || plan_rec.Veh_Type () < 0) {
+		Vehicle (0);
+		Veh_Type (0);
+	} else {
+		Vehicle (plan_rec.Vehicle ());
+		Veh_Type (plan_rec.Veh_Type ());
+	}
+	Type (plan_rec.Type ());
+
+	if (plan_rec.Depart () < 0) {
+		plan_rec.Depart (0);
+	}
+	Depart (plan_rec.Depart ());
+	Arrive (plan_rec.Arrive ());
+	Activity (plan_rec.Activity ());
+
+	Walk (plan_rec.Walk ());
+	Drive (plan_rec.Drive ());
+	Transit (plan_rec.Transit ());
+	Wait (plan_rec.Wait ());
+	Other (plan_rec.Other ());
+	Length (exe->UnRound (plan_rec.Length ()));
+	Cost (exe->UnRound (plan_rec.Cost ()));
+	Impedance (plan_rec.Impedance ());
+
+	Num_Legs (1);
+
+	int transfers = 0;
+	Dtime xwait = 0;
+
+	if (plan_rec.size () > 0 && plan_rec.Problem () == 0 && plan_rec.Mode () == TRANSIT_MODE || 
+		plan_rec.Mode () == PNR_IN_MODE || plan_rec.Mode () == PNR_OUT_MODE || 
+		plan_rec.Mode () == KNR_IN_MODE || plan_rec.Mode () == KNR_OUT_MODE) {
+
+		Plan_Leg_Itr leg_itr;
+
+		for (leg_itr = plan_rec.begin (); leg_itr != plan_rec.end (); leg_itr++) {
+			if (leg_itr->Type () == ROUTE_ID) {
+				transfers++;
+				if (transfers > 1) {
+					xwait += leg_itr->Time ();
+				}
+			}
+		}
+		transfers--;
+	}
+	Transfers (transfers);
+	Xfer_Wait (xwait);
+}
+
+//---------------------------------------------------------
+//	Put_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Put_Data (Plan_Skim_Base &file)
+{
+	Household (file.Household ());
+	Person (file.Person ());
+	Tour (file.Tour ());
+	Trip (file.Trip ());
+
+	Start (file.Start ());
+	End (file.End ());
+	Duration (file.Duration ());
+
+	Origin (file.Origin ());
+	Destination (file.Destination ());
+
+	Purpose (file.Purpose ());
+	Mode (file.Mode ());
+	Constraint (file.Constraint ());
+	Priority (file.Priority ());
+
+	Vehicle (file.Vehicle ());
+	Veh_Type (file.Veh_Type ());
+	Type (file.Type ());
+
+	Depart (file.Depart ());
+	Arrive (file.Arrive ());
+	Activity (file.Activity ());
+
+	Walk (file.Walk ());
+	Drive (file.Drive ());
+	Transit (file.Transit ());
+	Wait (file.Wait ());
+	Other (file.Other ());
+	Length (file.Length ());
+	Cost (file.Cost ());
+	Impedance (file.Impedance ());
+
+	Transfers (file.Transfers ());
+	Xfer_Wait (file.Xfer_Wait ());
+
+	Num_Legs (file.Num_Legs ());
+	if (Num_Legs () < 1) Num_Legs (1);
+}
+
+//---------------------------------------------------------
+//	Add_Leg
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Add_Leg (Plan_Data &plan_rec)
+{
+	Duration (plan_rec.Start () - End ());
+	Activity (plan_rec.Depart () - Arrive ());
+
+	Walk (Walk () + plan_rec.Walk ());
+	Drive (Drive () + plan_rec.Drive ());
+	Transit (Transit () + plan_rec.Transit ());
+	Wait (Wait () + plan_rec.Wait ());
+	Other (Other () + plan_rec.Other ());
+	Length (Length () + exe->UnRound (plan_rec.Length ()));
+	Cost (Cost () + exe->UnRound (plan_rec.Cost ()));
+	Impedance (Impedance () + plan_rec.Impedance ());
+
+	int transfers = 0;
+	Dtime xwait = 0;
+
+	if (plan_rec.size () > 0 && plan_rec.Problem () == 0 && plan_rec.Mode () == TRANSIT_MODE ||
+		plan_rec.Mode () == PNR_IN_MODE || plan_rec.Mode () == PNR_OUT_MODE ||
+		plan_rec.Mode () == KNR_IN_MODE || plan_rec.Mode () == KNR_OUT_MODE) {
+
+		Plan_Leg_Itr leg_itr;
+
+		for (leg_itr = plan_rec.begin (); leg_itr != plan_rec.end (); leg_itr++) {
+			if (leg_itr->Type () == ROUTE_ID) {
+				transfers++;
+				if (transfers > 1) {
+					xwait += leg_itr->Time ();
+				}
+			}
+		}
+		transfers--;
+	}
+	Transfers (Transfers () + transfers);
+	Xfer_Wait (Xfer_Wait () + xwait);
+	Num_Legs (Num_Legs () + 1);
+}
+
+//---------------------------------------------------------
+//	Add_Leg
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Add_Leg (Plan_Skim_Base &file)
+{
+	Duration (file.Start () - End ());
+	Activity (file.Depart () - Arrive ());
+
+	Walk (Walk () + file.Walk ());
+	Drive (Drive () + file.Drive ());
+	Transit (Transit () + file.Transit ());
+	Wait (Wait () + file.Wait ());
+	Other (Other () + file.Other ());
+	Length (Length () + file.Length ());
+	Cost (Cost () + file.Cost ());
+	Impedance (Impedance () + file.Impedance ());
+
+	Transfers (Transfers () + file.Transfers ());
+	Xfer_Wait (Xfer_Wait () + file.Xfer_Wait ());
+
+	if (file.Num_Legs () > 1) {
+		Num_Legs (Num_Legs () + file.Num_Legs ());
+	} else {
+		Num_Legs (Num_Legs () + 1);
+	}
+}
+
+//---------------------------------------------------------
+//	Zero_Data
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Zero_Data ()
+{
+	Household (0);
+	Person (0);
+	Tour (0);
+	Trip (0);
+	Start (0);
+	End (0);
+	Duration (0);
+
+	Origin (0);
+	Destination (0);
+
+	Purpose (0);
+	Mode (0);
+	Constraint (0);
+	Priority (0);
+	Vehicle (0);
+	Veh_Type (0);
+	Type (0);
+
+	Depart (0);
+	Arrive (0);
+	Activity (0);
+
+	Walk (0);
+	Drive (0);
+	Transit (0);
+	Wait (0);
+	Other (0);
+	Length (0);
+	Cost (0);
+	Impedance (0);
+	Transfers (0);
+	Xfer_Wait (0);
+	Num_Legs (0);
+}
+
+//---------------------------------------------------------
+//	Get_Index
+//---------------------------------------------------------
+
+void Plan_Skim_Base::Get_Index (Trip_Index &index)
+{
+	index.Household (Household ());
+	index.Person (Person ());
+	index.Tour (Tour ());
+	index.Trip (Trip ());
+}
+
+void Plan_Skim_Base::Get_Index (Time_Index &index)
+{
+	index.Start (Start ());
+	index.Household (Household ());
+	index.Person (Person ());
+}
+
+//---------------------------------------------------------
+//	Create_Fields
+//---------------------------------------------------------
+
+bool Plan_Skim_Base::Create_Fields (void) 
+{
+	base->Add_Field ("HHOLD", DB_INTEGER, 4, NO_UNITS, true);
+	base->Add_Field ("PERSON", DB_INTEGER, 2, NO_UNITS, true);
+	base->Add_Field ("TOUR", DB_INTEGER, 1, NO_UNITS, true);
+	base->Add_Field ("TRIP", DB_INTEGER, 1, NO_UNITS, true);
+	base->Add_Field ("START", DB_TIME, TIME_FIELD_SIZE, base->Time_Format ());
+	base->Add_Field ("END", DB_TIME, TIME_FIELD_SIZE, base->Time_Format ());
+	base->Add_Field ("DURATION", DB_TIME, TIME_FIELD_SIZE, base->Time_Format ());
+	base->Add_Field ("ORIGIN", DB_INTEGER, 4, NO_UNITS, true);
+	base->Add_Field ("DESTINATION", DB_INTEGER, 4, NO_UNITS, true);
+	base->Add_Field ("PURPOSE", DB_INTEGER, 1, NO_UNITS, true);
+
+	if (base->Code_Flag ()) {
+		base->Add_Field ("MODE", DB_INTEGER, 1, MODE_CODE, true);
+		base->Add_Field ("CONSTRAINT", DB_INTEGER, 1, CONSTRAINT_CODE, true);
+		base->Add_Field ("PRIORITY", DB_INTEGER, 1, PRIORITY_CODE, true);
+	} else {
+		base->Add_Field ("MODE", DB_STRING, 12, MODE_CODE);
+		base->Add_Field ("CONSTRAINT", DB_STRING, 14, CONSTRAINT_CODE);
+		base->Add_Field ("PRIORITY", DB_STRING, 10, PRIORITY_CODE);
+	}
+	base->Add_Field ("VEHICLE", DB_INTEGER, 2, NO_UNITS, true);
+	base->Add_Field ("VEH_TYPE", DB_INTEGER, 2, VEH_TYPE, true);
+	base->Add_Field ("TYPE", DB_INTEGER, 2, NO_UNITS, true);
+
+	base->Add_Field ("DEPART", DB_TIME, TIME_FIELD_SIZE, base->Time_Format ());
+	base->Add_Field ("ARRIVE", DB_TIME, TIME_FIELD_SIZE, base->Time_Format ());
+	base->Add_Field ("ACTIVITY", DB_TIME, TIME_FIELD_SIZE, base->Time_Format ());
+	base->Add_Field ("WALK", DB_TIME, 2, SECONDS, true);
+	base->Add_Field ("DRIVE", DB_TIME, 4, SECONDS, true);
+	base->Add_Field ("TRANSIT", DB_TIME, 4, SECONDS, true);
+	base->Add_Field ("WAIT", DB_TIME, 2, SECONDS, true);
+	base->Add_Field ("OTHER", DB_TIME, 2, SECONDS, true);
+	base->Add_Field ("LENGTH", DB_INTEGER, 4, FEET, true);
+	base->Add_Field ("COST", DB_FIXED, 2.1, CENTS, true);
+	base->Add_Field ("IMPEDANCE", DB_UNSIGNED, 4, IMPEDANCE, true);
+	base->Add_Field ("TRANSFERS", DB_INTEGER, 1, NO_UNITS, true);
+	base->Add_Field ("XFER_WAIT", DB_TIME, 2, SECONDS, true);
+	base->Add_Field ("NUM_LEGS", DB_INTEGER, 1, NO_UNITS, true);
+
+	return (Set_Field_Numbers ());
+}
+
+//-----------------------------------------------------------
+//	Set_Field_Numbers
+//-----------------------------------------------------------
+
+bool Plan_Skim_Base::Set_Field_Numbers (void)
+{
+	//---- required fields ----
+
+	hhold = base->Required_Field (HHOLD_FIELD_NAMES);
+
+	if (hhold < 0) return (false);
+
+	//---- optional fields ----
+
+	person = base->Optional_Field (PERSON_FIELD_NAMES);
+	tour = base->Optional_Field (TOUR_FIELD_NAMES);
+	trip = base->Optional_Field (TRIP_FIELD_NAMES);
+	mode = base->Optional_Field (MODE_FIELD_NAMES);
+	start = base->Optional_Field (START_FIELD_NAMES);
+	end = base->Optional_Field (END_FIELD_NAMES);
+	duration = base->Optional_Field (DURATION_FIELD_NAMES);
+	origin = base->Optional_Field (ORIGIN_FIELD_NAMES);
+	destination = base->Optional_Field (DESTINATION_FIELD_NAMES);
+	purpose = base->Optional_Field (PURPOSE_FIELD_NAMES);
+	constraint = base->Optional_Field (CONSTRAINT_FIELD_NAMES);
+	priority = base->Optional_Field (PRIORITY_FIELD_NAMES);
+	vehicle = base->Optional_Field (VEHICLE_FIELD_NAMES);
+	veh_type = base->Optional_Field (VEH_TYPE_FIELD_NAMES);
+	type = base->Optional_Field (TRAVEL_TYPE_FIELD_NAMES);
+
+	depart = base->Optional_Field (DEPART_FIELD_NAMES);
+	arrive = base->Optional_Field (ARRIVE_FIELD_NAMES);
+	activity = base->Optional_Field ("ACTIVITY");
+	walk = base->Optional_Field (WALK_SKIM_FIELD_NAMES);
+	drive = base->Optional_Field (DRIVE_SKIM_FIELD_NAMES);
+	transit = base->Optional_Field (TRANSIT_SKIM_FIELD_NAMES);
+	wait = base->Optional_Field (WAIT_SKIM_FIELD_NAMES);
+	other = base->Optional_Field (OTHER_SKIM_FIELD_NAMES);
+	length = base->Optional_Field (LENGTH_SKIM_FIELD_NAMES);
+	cost = base->Optional_Field (COST_SKIM_FIELD_NAMES);
+	impedance = base->Optional_Field (IMP_SKIM_FIELD_NAMES);
+
+	transfers = base->Optional_Field ("TRANSFERS", "XFERS", "NO_XFERS");
+	xwait = base->Optional_Field ("XFER_WAIT", "XWAIT", "XFER_TIME");
+	num_legs = base->Optional_Field ("NUM_LEGS", "LEGS", "NUMLEGS", "NLEGS", "TRIPS");
+
+	//---- set default units ----
+
+	base->Set_Units (start, HOUR_CLOCK);
+	base->Set_Units (end, HOUR_CLOCK);
+	base->Set_Units (duration, HOUR_CLOCK);
+	base->Set_Units (mode, MODE_CODE);
+	base->Set_Units (constraint, CONSTRAINT_CODE);
+	base->Set_Units (priority, PRIORITY_CODE);
+	base->Set_Units (veh_type, VEH_TYPE);
+	
+	base->Set_Units (depart, HOUR_CLOCK);
+	base->Set_Units (arrive, HOUR_CLOCK);
+	base->Set_Units (activity, HOUR_CLOCK);
+	base->Set_Units (walk, SECONDS);
+	base->Set_Units (drive, SECONDS);
+	base->Set_Units (transit, SECONDS);
+	base->Set_Units (wait, SECONDS);
+	base->Set_Units (other, SECONDS);
+	base->Set_Units (length, FEET);
+	base->Set_Units (cost, CENTS);
+	base->Set_Units (impedance, IMPEDANCE);
+	base->Set_Units (xwait, SECONDS);
+
+	return (true);
+}

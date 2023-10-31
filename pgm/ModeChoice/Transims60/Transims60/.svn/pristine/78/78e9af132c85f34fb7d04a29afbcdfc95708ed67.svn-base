@@ -1,0 +1,121 @@
+//*********************************************************
+//	Write_Arc_Data.cpp - write the arc data files
+//*********************************************************
+
+#include "ArcJoin.hpp"
+
+#include "Shape_Tools.hpp"
+
+//---------------------------------------------------------
+//	Write_Arc_Data
+//---------------------------------------------------------
+
+void ArcJoin::Write_Arc_Data (void)
+{
+	int i, j, k, p, type, best, match;
+	double x1, y1, x2, y2, dx, dy, diff, best_diff;
+	String match_str;
+	Arc_Data_Group *arc_ptr;
+	Arc_Data_Itr arc_itr;
+	Points *points;
+	Points_Itr pt_itr;
+	XYZ_Point pt;
+	XY_Range box;
+	XY_Range_Itr box_itr;
+
+	//---- write the arc data file ----
+
+	arc_ptr = &arc_data_array [0];
+
+	Show_Message (String ("Writing %s -- Record") % new_arc_file.File_Type ());
+	Set_Progress ();
+
+	//---- process each record ----
+
+	i = match = 0;
+
+	while (arc_ptr->data_db->Read_Record ()) {
+		Show_Progress ();
+
+		new_arc_file.Reset_Record ();
+		new_arc_file.Copy_Fields (*(arc_ptr->data_db));
+
+		box = arc_ptr->ranges [i];
+		points = &arc_ptr->shapes [i++];
+
+		new_arc_file.assign (points->begin (), points->end ());
+
+		for (j = 0, arc_itr = arc_data_array.begin (); arc_itr != arc_data_array.end (); arc_itr++, j++) {
+			if (j == 0) continue;
+
+			best = 0;
+			best_diff = MAX_INTEGER;
+			type = arc_itr->file->Shape_Type ();
+
+
+			if (arc_itr->new_field >= 0) {
+				if (arc_itr->type) {
+					match_str = new_arc_file.Get_String (arc_itr->new_field);
+				} else {
+					match = new_arc_file.Get_Integer (arc_itr->new_field);
+				}
+			}
+
+			for (k = 0, box_itr = arc_itr->ranges.begin (); box_itr != arc_itr->ranges.end (); box_itr++, k++) {
+				if (!In_Extents (box, *box_itr)) continue;
+
+				if (type == DOT) {
+					pt = arc_itr->shapes [k] [0];
+					x1 = y1 = 0;
+
+					for (p=0, pt_itr = points->begin (); pt_itr != points->end (); pt_itr++, p++) {
+						if (p >= 0) {
+							if (pt_itr->x >= pt.x && x1 <= pt.x) {
+								if (x1 == pt_itr->x) {
+									y2 = pt.y;
+								} else {
+									dx = (pt.x - x1) / (pt_itr->x - x1);
+									y2 = y1 + dx * (pt_itr->y - y1);
+								}
+								diff = abs (y1 - y2);
+								if (diff < best_diff) {
+									best_diff = diff;
+									best = k;
+								}
+							}
+							if (pt_itr->y >= pt.y && y1 <= pt.y) {
+								if (y1 == pt_itr->y) {
+									x2 = pt.x;
+								} else {
+									dy = (pt.y - y1) / (pt_itr->y - y1);
+									x2 = x1 + dy * (pt_itr->x - x1);
+								}
+								diff = abs (x1 - x2);
+								if (diff < best_diff) {
+									best_diff = diff;
+									best = k;
+								}
+							}
+						}
+						x1 = pt_itr->x;
+						y1 = pt_itr->y;
+					}
+				} else {
+
+				}
+			}
+
+			if (best > 0 && best_diff <= buffer) {
+				arc_itr->data_db->Read_Record (best);
+	exe->Write (1, " match=") << i << " j=" << j << " best=" << (best+1);
+				new_arc_file.Copy_Fields (*(arc_itr->data_db));
+			}
+		}
+		new_arc_file.Write_Record ();
+	}
+	End_Progress ();
+
+	Print (2, String ("Number of %s Records = %d") % new_arc_file.File_Type () % Progress_Count ());
+		
+	new_arc_file.Close ();
+}

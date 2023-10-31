@@ -1,0 +1,106 @@
+//*********************************************************
+//	Write_Park_Demand.cpp - write a new parking demand file
+//*********************************************************
+
+#include "Data_Service.hpp"
+
+//---------------------------------------------------------
+//	Write_Park_Demand
+//---------------------------------------------------------
+
+void Data_Service::Write_Park_Demand (void)
+{
+	int i, index, count, function;
+	Dtime low, high, time;
+
+	Int_Map_Itr itr;
+	Park_Demand *park_ptr;
+	Park_Period_Itr period_itr;
+	Parking_Demand_Data park_rec;
+	
+	Park_Demand_File *file = System_Park_Demand_File (true);
+
+	Show_Message (String ("Writing %s -- Record") % file->File_Type ());
+	Set_Progress ();
+
+	count = 0;
+	function = park_period_array.Penalty_Function ();
+
+	//---- process each time period ----
+
+	for (i=0, period_itr = park_period_array.begin (); period_itr != park_period_array.end (); period_itr++, i++) {
+		
+		park_period_array.periods->Period_Range (i, low, high);
+
+		park_rec.Start (low);
+		park_rec.End (high);
+
+		//---- parking sort ----
+
+		for (itr = parking_map.begin (); itr != parking_map.end (); itr++) {
+			Show_Progress ();
+
+			index = itr->second;
+			park_ptr = period_itr->Data_Ptr (index);
+			if (park_ptr->Demand () == 0 && park_ptr->Penalty () == 0) continue;
+
+			park_rec.Parking (index);
+
+			park_rec.Demand (park_ptr->Demand ());
+			park_rec.Penalty (park_ptr->Penalty ());
+
+			count += Put_Park_Demand_Data (*file, park_rec, function);
+		}
+	}
+	Show_Progress (count);
+	End_Progress ();
+	file->Close ();
+	
+	Print (2, String ("%s Records = %d") % file->File_Type () % count);
+}
+
+//---------------------------------------------------------
+//	Put_Park_Demand_Data
+//---------------------------------------------------------
+
+int Data_Service::Put_Park_Demand_Data (Park_Demand_File &file, Parking_Demand_Data &data, int function)
+{
+	int penalty;
+	double ratio, pen;
+
+	Int_Map_Itr map_itr;
+	Parking_Data *parking_ptr;
+	Park_Nest_Itr park_itr;
+
+	parking_ptr = &parking_array [data.Parking ()];
+
+	file.Parking (parking_ptr->Parking ());
+	file.Start (data.Start ());
+	file.End (data.End ());
+
+	file.Demand (data.Demand ());
+	penalty = data.Penalty ();
+
+	if (function > 0 && data.Demand () > 0) {
+		for (park_itr = parking_ptr->begin (); park_itr != parking_ptr->end (); park_itr++) {
+			if (data.Start () >= park_itr->Start () && data.End () <= park_itr->End () && park_itr->Space () > 0) {
+				ratio = (double) data.Demand () / park_itr->Space ();
+				pen = Scale (functions.Apply_Function (function, ratio));
+				if (pen > MAX_PENALTY) {
+					pen = MAX_PENALTY;
+				}
+				if (pen > 0 && pen > penalty) {
+					penalty = (int) pen;
+				}
+				break;
+			}
+		}
+	}
+	file.Penalty (Resolve (penalty));
+
+	if (!file.Write (false)) {
+		Error (String ("Writing %s") % file.File_Type ());
+	}
+	return (1);
+}
+

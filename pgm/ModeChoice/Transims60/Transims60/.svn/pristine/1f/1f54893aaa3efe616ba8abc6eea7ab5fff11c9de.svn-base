@@ -1,0 +1,158 @@
+//*********************************************************
+//	Zone_Tables - process zone-based trip tables
+//*********************************************************
+
+#include "ModeChoice.hpp"
+
+#include <math.h>
+
+//---------------------------------------------------------
+//	Zone_Tables
+//---------------------------------------------------------
+
+void ModeChoice::Zone_Tables (void)
+{
+	int i, j, org, des, o1, d1, org_seg, des_seg, segment, seg, group;
+	double zero_sum, dvalue, tot_lost;
+	double *data;
+
+	Doubles zero_tab, constant, utility, nest_sum;
+	Dbls_Array mode_sum, values;
+	Db_Mat_Itr mat_itr;
+	Int_Itr mode_itr;
+	Int2_Map_Itr map_itr;
+	Int_Map *org_map, *des_map;
+	Int_Map_Itr org_itr, des_itr;
+
+	if (calib_flag) {
+		Show_Message (String ("Processing Iteration %d Origin Zone") % iteration);
+	} else {
+		Show_Message ("Processing Origin Zone");
+	}
+	Set_Progress ();
+
+	if (table_file->Num_Zones () == 0) {
+		if (!table_file->Num_Zones (Max_Zone_Number ())) {
+			Error ("Allocating Matrix Memory");
+		}
+	}
+	tot_lost = 0.0;
+	if (lost_flag && save_flag) {
+		Print (2, "Lost Trip Report");
+	}
+
+	seg = segment = group = 0;
+	zero_sum = -700;
+	zero_tab.assign (num_models, zero_sum);
+	constant.assign (num_modes, 0.0);
+	
+	initial_flag = (iteration == 1 && calib_flag && !constant_flag);
+
+	if (iteration > 1) {
+		table_file->Rewind ();
+
+		for (mat_itr = skim_files.begin (); mat_itr != skim_files.end (); mat_itr++) {
+			(*mat_itr)->Rewind ();
+		}
+	}
+	org_map = table_file->Org_Map ();
+	des_map = table_file->Des_Map ();
+	new_table_file->Zero_Data ();
+
+	//---- process each origin zone ----
+
+	for (org_itr = org_map->begin (); org_itr != org_map->end (); org_itr++) {
+		Show_Progress ();
+		org = org_itr->first;
+
+		if (select_org_zones && !org_zone_range.In_Range (org)) continue;
+
+		o1 = org_itr->second;
+		org_flag = false;
+
+		//---- read trip matrix ----
+
+		if (!table_file->Read_Record (org)) {
+			Warning (String ("Reading %s Origin %d") % table_file->File_Type () % org);
+			continue;
+		}
+
+		//---- scan for trips ----
+
+		if (!org_flag) {
+			for (i=0; i < num_models && !org_flag; i++) {
+				data = (double *) table_file->Row_Ptr (table_map [i]);
+
+				for (j=0; j < zones; j++, data++) {
+					if (*data != 0.0) {
+						org_flag = true;
+						break;
+					}
+				}
+			}
+		}
+		if (!org_flag) continue;
+
+		//---- read the origin zone and skim data ----
+
+		org_db.Read_Record (org);
+
+		if (org_map_field >= 0) {
+			org_seg = org_db.Get_Integer (org_map_field);
+		}
+		for (mat_itr = skim_files.begin (); mat_itr != skim_files.end (); mat_itr++) {
+			if (!(*mat_itr)->Read_Record (org)) {
+				Error (String ("Reading %s") % (*mat_itr)->File_Type ());
+			}
+		}
+		new_table_file->Zero_Data ();
+
+		for (des_itr = des_map->begin (); des_itr != des_map->end (); des_itr++) {
+			des = des_itr->first;
+			d1 = des_itr->second;
+
+			if (select_des_zones && !des_zone_range.In_Range (des)) continue;
+
+			for (i=0; i < num_models; i++) {
+				table_file->Get_Cell_Index (d1, table_map [i], dvalue);
+				if (dvalue != 0.0) break;
+			}
+			if (i == num_models) continue;
+
+			des_db.Read_Record (des);
+
+			if (segment_flag && des_map_field >= 0) {
+				des_seg = des_db.Get_Integer (des_map_field);
+
+				map_itr = segment_map.find (Int2_Key (org_seg, des_seg));
+
+				if (map_itr != segment_map.end ()) {
+					seg = segment = map_itr->second;
+					table_file->Put_Field (segment_field, segment);
+
+					if (initial_flag && !calib_seg_flag) {
+						seg = 0;
+					}
+				} else {
+					seg = segment = 0;
+				}
+			}
+			table_file->Set_Fields (org, des);
+
+			for (mat_itr = skim_files.begin (); mat_itr != skim_files.end (); mat_itr++) {
+				(*mat_itr)->Set_Fields (org, des);
+			}
+
+			Mode_Splits (0, o1, d1, org, des);
+		}
+		if (save_flag) {
+			if (!new_table_file->Write_Record (org)) {
+				Error ("Writing Tables");
+			}
+		}
+	}
+	if (!calib_flag) End_Progress ();
+	if (lost_flag && save_flag) {
+		Print (2, String ("Total Number of Lost Trips = %.1lf") % tot_lost);
+	}
+}

@@ -1,0 +1,25 @@
+
+	********************************************
+	|                                          |
+	|         Router - Version 6.0.117         |
+	|  Copyright 2014 by TRANSIMS Open-Source  |
+	|         Fri Aug 14 15:19:16 2015         |
+	|                                          |
+	********************************************
+
+	Control File = C:\Software\Transims60\x64\BinThreads\Router.exe
+	Report File  = C:\Software\Transims60\x64\BinThreads\Router.prn (Create)
+
+	Network Path Building
+
+
+	Missing Control Keys:
+		NODE_FILE
+		LINK_FILE
+		CONNECTION_FILE
+		LOCATION_FILE
+
+	Fri Aug 14 15:19:16 2015
+	Error: Required Control Keys were Not Found
+
+	Fri Aug 14 15:19:16 2015 -- Process Terminated Due to Errors (0:00:00)

@@ -1,0 +1,9 @@
+
+0 header
+"funcl",C,1,12,0,12,0
+"lanes",I,2,11,0,11,0
+"areatype",C,3,10,0,10,0
+"factype",C,4,5,0,5,0
+"speedlimit",I,5,11,0,11,0
+"LOS_D",I,6,11,0,11,0
+"LOS_E",I,7,11,0,11,0

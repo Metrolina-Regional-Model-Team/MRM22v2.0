@@ -1,0 +1,50 @@
+//*********************************************************
+//	Control.cpp - Program Control
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void VissimNet::Program_Control (void)
+{
+	String key;
+
+	//---- open network and demand files ----
+
+	Data_Service::Program_Control ();
+
+	Print (2, String ("%s Control Keys:") % Program ());
+	Print (1);
+
+	//---- open vissim xml file ----
+
+	key = Get_Control_String (VISSIM_XML_FILE);
+
+	if (!key.empty ()) {
+		input_flag = true;
+		input_file.File_Type ("VISSIM XML File");
+		input_file.Open (Project_Filename (key));
+
+		if (!System_File_Flag (NEW_NODE) || !System_File_Flag (NEW_LINK)) {
+			Error ("A New Link and Node File are Required");
+		}
+	} else {
+
+		key = Get_Control_String (NEW_VISSIM_XML_FILE);
+
+		if (!key.empty ()) {
+			input_flag = false;
+			output_file.File_Type ("New VISSIM XML File");
+			output_file.Create (Project_Filename (key));
+
+			if (!System_File_Flag (NODE) || !System_File_Flag (LINK)) {
+				Error ("A Link and Node File are Required");
+			}
+		} else {
+			Error ("An Input or Output VISSIM XML File is Required");
+		}
+	}
+} 

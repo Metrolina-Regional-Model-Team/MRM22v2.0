@@ -1,0 +1,53 @@
+//*********************************************************
+//	Read_Arc_Data.cpp - read the arc data files
+//*********************************************************
+
+#include "ArcJoin.hpp"
+
+//---------------------------------------------------------
+//	Read_Arc_Data
+//---------------------------------------------------------
+
+void ArcJoin::Read_Arc_Data (void)
+{
+	Arc_Data_Itr arc_itr;
+	XY_Range box;
+
+	//---- read the arcview data files ----
+
+	for (arc_itr = arc_data_array.begin (); arc_itr != arc_data_array.end (); arc_itr++) {
+		Show_Message (String ("Reading %s -- Record") % arc_itr->file->File_Type ());
+		Set_Progress ();
+
+		//---- read each record ----
+
+		while (arc_itr->file->Read_Record ()) {
+			Show_Progress ();
+			arc_itr->shapes.push_back (*arc_itr->file);
+
+			if (arc_itr->file->size () != arc_itr->shapes [arc_itr->data_db->size ()].size ()) {
+				Error ("Size problem");
+			}
+			box = arc_itr->file->Coordinate_Range ();
+
+			if (buffer > 0.0) {
+				box.xmin -= buffer;
+				box.ymin -= buffer;
+				box.xmax += buffer;
+				box.ymax += buffer;
+			}
+			arc_itr->ranges.push_back (box);
+			if (!arc_itr->data_db->Copy_Fields (*arc_itr->file)) {
+				Error ("Copying Fields");
+			}
+			if (!arc_itr->data_db->Add_Record ()) {
+				Error ("Adding Record");
+			}
+		}
+		End_Progress ();
+
+		Print (2, String ("Number of %s Records = %d") % arc_itr->file->File_Type () % Progress_Count ());
+		
+		arc_itr->file->Close ();
+	}
+}

@@ -1,0 +1,54 @@
+Metrolina Regional Travel Model Gravity Model Program tdhbw4.set: HBW income 4
+
+Files:
+  Input:
+    ffactors  = F factors
+    prods     = productions (ASCII)
+    attrs     = attractions (ASCII)
+    htime     = highway time matrix
+    ttime     = transit time matrix
+    htoll     = highway toll matrix (optional)
+  Output:
+    trips     = output ASCII trip table
+    list      = program reports
+
+&files
+  ffactors = 'ffhbw4.prn'
+  prods    = '..\tg\productions.asc'
+  attrs    = '..\tg\attractions.asc'
+  htime    = '..\..\skims\TThwy_peak.asc'
+  ttime    = '..\..\skims\TTTran_peak.asc'
+
+  trips    = 'tdhbw4.asc'
+  list     = 'tdhbw4.txt'
+/
+
+Parameters:
+  print_te   = print trip ends? (t/f, default t)
+  print_tlf  = print trip lth. freq. distribution? (t/f, def. t)
+  skimmax    = max. impedance value for highway time (90)
+  iter       = number of gravity model iterations requested (4)
+  ttimefac   = sensitivity factor for transit time (1.0)
+  htollfac   = sensitivity factor for highway toll (0.0)
+  tformat    = trip end format specifier (no default)
+        (this must identify 2 Integer fields and one Real field:
+        TAZ, sequential zone number, trip ends [productions or attractions])
+  sformat    = skim format specifier (no default)
+        (this must identify 2 Integer fields and one Real field:
+        origin TAZ, destination TAZ, skim value; the Real field MUST be f?.0)
+  tlf_file   = output TLF file? (t/f, def. f)
+  	(automatically named like the LIST file, with extension .DAT)
+  intrak     = intrazonal K factor (1.0)
+
+&parameters
+  print_te   = t
+  print_tlf  = t
+  skimmax    = 100
+  iter       = 3
+  tformat    = '(i10,1x,i10,34x,f10.3)'
+  sformat    = '(i12,i12,f8.0)'
+  ttimefac   = 0.01
+  tlf_file   = t
+  trace      = 0
+  intrak     = 4.0
+/

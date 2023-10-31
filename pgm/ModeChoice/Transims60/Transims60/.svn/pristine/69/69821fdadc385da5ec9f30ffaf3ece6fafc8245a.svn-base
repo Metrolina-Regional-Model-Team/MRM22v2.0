@@ -1,0 +1,294 @@
+//*********************************************************
+//	Node_Fields.cpp - process node related fields
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+#include <math.h>
+
+//---------------------------------------------------------
+//	Node_Fields
+//---------------------------------------------------------
+
+bool VissimNet::Node_Fields (void)
+{
+	int link, node, from, to;
+	double len, len2;
+	String data;
+
+	XYZ pt;
+	Int_Key_Map_Itr connect_itr;
+	Int_Map_Itr map_itr;
+	Link_Data *link_ptr, *from_ptr, *to_ptr;
+	Shape_Data *shape_ptr;
+
+	len = len2 = 0.0;
+
+	if (pair_itr->first.Equals ("<node")) {
+		if (node_flag) Warning ("Node Block was Not Terminated");
+		node_flag = !pair_itr->second.Equals ("/>");
+		node_data.Clear ();
+
+		for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+			if (pair_itr->first.Equals ("anmConnNodeNo")) {
+				data = pair_itr->second;
+				if (data.length () > 10) {
+					data = data.substr (data.length () - 10);
+				}
+				if (data.length () == 10 && data [0] > '1') data [0] = '1';
+				node_data.Node (data.Integer ());
+			} else if (pair_itr->first.Equals ("no")) {
+				data = pair_itr->second;
+				if (data.length () > 10) {
+					data = data.substr (data.length () - 10);
+				}
+				if (data.length () == 10 && data [0] > '1') data [0] = '1';
+				node_data.Node (data.Integer ());
+			}
+		}
+		if (!node_flag) {
+			if (node_map.insert (Int_Map_Data (node_data.Node (), (int) node_array.size ())).second) {
+				node_array.push_back (node_data);
+			}
+		}
+		return (true);
+	} else if (pair_itr->first.Equals ("</node")) {
+		if (!node_flag) Warning ("Node Block was Not Initialized");
+		node_flag = false;
+		if (node_data.Count () > 0) {
+			node_data.X (node_data.X () / node_data.Count ());
+			node_data.Y (node_data.Y () / node_data.Count ());
+			node_data.Z (node_data.Z () / node_data.Count ());
+		}
+		if (node_map.insert (Int_Map_Data (node_data.Node (), (int) node_array.size ())).second) {
+			node_array.push_back (node_data);
+		}
+	}
+	if (node_flag) {
+		if (pair_itr->first.Equals ("<linkSegs")) {
+			if (linksegs_flag) Warning ("LinkSeg Block was Not Terminated");
+			linksegs_flag = true;
+		} else if (pair_itr->first.Equals ("</linkSegs")) {
+			if (!linksegs_flag) Warning ("LinkSeg Block was Not Initialized");
+			linksegs_flag = false;
+		}
+		if (linksegs_flag) {
+			if (pair_itr->first.Equals ("<linkSegment")) {
+				if (linkseg_flag) Warning ("LinkSegment Block was Not Terminated");
+				linkseg_flag = !pair_itr->second.Equals ("/>");
+
+				for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+					if (pair_itr->first.Equals ("link")) {
+						data = pair_itr->second;
+						if (data.length () > 10) {
+							data = data.substr (data.length () - 10);
+						}
+						if (data.length () == 10 && data [0] > '1') data [0] = '1';
+						link = data.Integer ();
+					} else if (pair_itr->first.Equals ("fromPos")) {
+						len = pair_itr->second.Double ();
+					} else if (pair_itr->first.Equals ("internalToPos")) {
+						len2 = pair_itr->second.Double ();
+					}
+				}
+				if (!linkseg_flag) {
+					node = (int) node_array.size ();
+
+					connect_itr = connect.find (link);
+					if (connect_itr != connect.end ()) {
+						map_itr = link_map.find (link);
+						if (map_itr != link_map.end ()) {
+							link_ptr = &link_array [map_itr->second];
+
+							if (link_ptr->Shape () >= 0) {
+								shape_ptr = &shape_array [link_ptr->Shape ()];
+
+								if (len == 0.0) {
+									from = connect_itr->second.first / 10;
+									map_itr = link_map.find (from);
+									from_ptr = &link_array [map_itr->second];
+
+									if (from_ptr->Anode () == node && from_ptr->Bnode () == node) {
+										if (len2 != -1) {
+											link_ptr->Anode (-1);
+											from_ptr->Bnode (-1);
+										} else {
+											link_ptr->Anode (node);
+											from_ptr->Anode (-1);
+										}
+									} else {
+										link_ptr->Anode (node);
+									}
+									if (link_ptr->Anode () >= 0) {
+										pt = shape_ptr->front ();
+
+										node_data.X (node_data.X () + pt.x);
+										node_data.Y (node_data.Y () + pt.y);
+										node_data.Z (node_data.Z () + pt.z);
+
+										node_data.Add_Count ();
+									}
+								}
+
+								if (len2 == -1) {
+									to = connect_itr->second.second / 10;
+									map_itr = link_map.find (to);
+									to_ptr = &link_array [map_itr->second];
+
+									if (to_ptr->Anode () == node && to_ptr->Bnode () == node) {
+										if (len > 0.0) {
+											link_ptr->Bnode (-1);
+											to_ptr->Anode (-1);
+										} else {
+											link_ptr->Bnode (node);
+											to_ptr->Bnode (-1);
+										}
+									} else {
+										link_ptr->Bnode (node);
+									}
+									if (link_ptr->Bnode () >= 0) {
+										pt = shape_ptr->back ();
+
+										node_data.X (node_data.X () + pt.x);
+										node_data.Y (node_data.Y () + pt.y);
+										node_data.Z (node_data.Z () + pt.z);
+										node_data.Add_Count ();
+									}
+								}
+							}
+						}
+					} else {
+						map_itr = link_map.find (link);
+						if (map_itr != link_map.end ()) {
+							link_ptr = &link_array [map_itr->second];
+
+							if (link_ptr->Shape () >= 0) {
+								shape_ptr = &shape_array [link_ptr->Shape ()];
+
+
+								if (len == 0.0) {
+									link_ptr->Anode (node);
+									pt = shape_ptr->front ();
+
+									node_data.X (node_data.X () + pt.x);
+									node_data.Y (node_data.Y () + pt.y);
+									node_data.Z (node_data.Z () + pt.z);
+									node_data.Add_Count ();
+								}
+								if (len2 == -1) {
+									link_ptr->Bnode (node);
+									pt = shape_ptr->back ();
+
+									node_data.X (node_data.X () + pt.x);
+									node_data.Y (node_data.Y () + pt.y);
+									node_data.Z (node_data.Z () + pt.z);
+									node_data.Add_Count ();
+								}
+							}
+						}
+					}
+				}
+				return (true);
+			} else if (pair_itr->first.Equals ("</linkSegment")) {
+				if (!linkseg_flag) Warning ("LinkSegment Block was Not Initialized");
+				linkseg_flag = false;
+
+				node = (int) node_array.size ();
+				connect_itr = connect.find (link);
+
+				if (connect_itr != connect.end ()) {
+					map_itr = link_map.find (link);
+					if (map_itr != link_map.end ()) {
+						link_ptr = &link_array [map_itr->second];
+
+						if (link_ptr->Shape () >= 0) {
+							shape_ptr = &shape_array [link_ptr->Shape ()];
+
+							if (len == 0.0) {
+								from = connect_itr->second.first / 10;
+								map_itr = link_map.find (from);
+								from_ptr = &link_array [map_itr->second];
+
+								if (from_ptr->Anode () == node && from_ptr->Bnode () == node) {
+									if (len2 != -1) {
+										link_ptr->Anode (-1);
+										from_ptr->Bnode (-1);
+									} else {
+										link_ptr->Anode (node);
+										from_ptr->Anode (-1);
+									}
+								} else {
+									link_ptr->Anode (node);
+								}
+								if (link_ptr->Anode () >= 0) {
+									pt = shape_ptr->front ();
+
+									node_data.X (node_data.X () + pt.x);
+									node_data.Y (node_data.Y () + pt.y);
+									node_data.Z (node_data.Z () + pt.z);
+
+									node_data.Add_Count ();
+								}
+							}
+
+							if (len2 == -1) {
+								to = connect_itr->second.second / 10;
+								map_itr = link_map.find (to);
+								to_ptr = &link_array [map_itr->second];
+
+								if (to_ptr->Anode () == node && to_ptr->Bnode () == node) {
+									if (len > 0.0) {
+										link_ptr->Bnode (-1);
+										to_ptr->Anode (-1);
+									} else {
+										link_ptr->Bnode (node);
+										to_ptr->Bnode (-1);
+									}
+								} else {
+									link_ptr->Bnode (node);
+								}
+								if (link_ptr->Bnode () >= 0) {
+									pt = shape_ptr->back ();
+
+									node_data.X (node_data.X () + pt.x);
+									node_data.Y (node_data.Y () + pt.y);
+									node_data.Z (node_data.Z () + pt.z);
+									node_data.Add_Count ();
+								}
+							}
+						}
+					}
+				} else {
+					map_itr = link_map.find (link);
+					if (map_itr != link_map.end ()) {
+						link_ptr = &link_array [map_itr->second];
+
+						if (link_ptr->Shape () >= 0) {
+							shape_ptr = &shape_array [link_ptr->Shape ()];
+
+							if (len == 0.0) {
+								link_ptr->Anode (node);
+								pt = shape_ptr->front ();
+
+								node_data.X (node_data.X () + pt.x);
+								node_data.Y (node_data.Y () + pt.y);
+								node_data.Z (node_data.Z () + pt.z);
+								node_data.Add_Count ();
+							}
+							if (len2 == -1) {
+								link_ptr->Bnode (node);
+								pt = shape_ptr->back ();
+
+								node_data.X (node_data.X () + pt.x);
+								node_data.Y (node_data.Y () + pt.y);
+								node_data.Z (node_data.Z () + pt.z);
+								node_data.Add_Count ();
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return (false);
+} 

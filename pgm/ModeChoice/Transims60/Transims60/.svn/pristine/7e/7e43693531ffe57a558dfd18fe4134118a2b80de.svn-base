@@ -1,0 +1,582 @@
+//*********************************************************
+//	Mode_Splits - calculate mode splits
+//*********************************************************
+
+#include "ModeChoice.hpp"
+
+#include <math.h>
+
+//---------------------------------------------------------
+//	Mode_Splits
+//---------------------------------------------------------
+
+int ModeChoice::Mode_Splits (int model, int o, int d, int org, int des)
+{
+	int i, j, n, mode, nest, segment, seg, group, table;
+	double trips, sum_trips, access, sum, value, dvalue, zero_sum, level, tot_lost;
+	double can_walk_market, can_walk_share, must_drive_market, must_drive_share, auto_exp;
+	bool save_access_flag;
+
+	Doubles constant, utility, nest_sum;
+	Doubles mode_sum;
+	Dbls_Array values;
+	Db_Base *mode_file;
+	Db_Mat_Itr mat_itr;
+	Integers *market_ptr, *nest_ptr, mode_plan;
+	Int_Itr mode_itr;
+	Int2_Map_Itr map_itr;
+
+	tot_lost = 0.0;
+	seg = segment = group = 0;
+	zero_sum = -700;
+	constant.assign (num_modes, 0.0);
+	
+	initial_flag = (iteration == 1 && calib_flag && !constant_flag);
+	sum_flag = (save_flag && (mode_value_flag || seg_value_flag));
+	prod_sum_flag = (save_flag && prod_flag);
+	attr_sum_flag = (save_flag && attr_flag);
+	save_summit_flag = (save_flag && summit_flag);
+	save_access_flag = (save_flag && access_flag);
+
+	//---- check for trips ----
+
+	if (plan_flag) {
+		trips = 1;
+	} else {
+		trips = table_file->Get_Double (table_map [model]);
+		if (trips == 0.0) return (0);
+
+		table_file->Put_Field (model_field, model);
+
+		if (lost_flag && save_flag) {
+			Print (2, "Lost Trip Report");
+		}
+	}
+
+	//---- initialize constants ----
+
+	for (i=0; i < num_modes; i++) {
+		mode_file = data_rec [i];
+		mode_file->Reset_Record ();
+
+		if (constant_flag || calib_flag) {
+			if (plan_flag) {
+				value = seg_constant [segment] [i] [num_models];
+			} else {
+				value = seg_constant [segment] [i] [model];
+			}
+		} else {
+			value = 0;
+		}
+		constant [i] = value;
+		mode_file->Put_Field (const_field, value);
+	}
+
+	//---- execute the user program ----
+
+	if (program.Execute () == 0) return (0);
+
+	//---- check the return values ----
+
+	if (plan_flag) {
+		model = trip_file.Get_Integer (model_field);
+		segment = trip_file.Get_Integer (segment_field);
+	} else {
+		trips = table_file->Get_Double (table_map [model]);
+		if (trips == 0.0) return (0);
+
+		model = table_file->Get_Integer (model_field);
+		segment = table_file->Get_Integer (segment_field);
+	}
+	if (model < 1 || model > num_models) {
+		Warning (String ("Model Number %d is Out of Range (1..%d)") % model % num_models);
+		return (0);
+	}
+	model--;
+
+	if (segment < 0 || segment > (num_market + 1)) {
+		Warning (String ("Market Segment %d is Out of Range (0..%d)") % model % num_market);
+	}
+
+	//---- calculate mode utilities ----
+
+	mode_sum.assign (num_modes, zero_sum);
+
+	if (sum_flag) {
+		values.assign (num_modes, zero_values);
+	}
+	mode_plan.assign (num_modes, 0);
+
+	for (i = 0; i < num_modes; i++) {
+		mode_file = data_rec [i];
+
+		value = mode_file->Get_Double (time_field);
+		if (value > 0.0) {
+			sum = value * time_values [model];
+			if (sum_flag) {
+				values [i] [time_field] = value;
+			}
+		} else {
+			if (mode_file->Get_Double (walk_field) <= 0.0) continue;
+			sum = 0;
+		}
+		if (sum_flag) {
+			values [i] [const_field] = 1;
+		}
+		value = mode_file->Get_Double (walk_field);
+		if (value > 0.0) {
+			sum += value * walk_values [model];
+			if (sum_flag) {
+				values [i] [walk_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (auto_field);
+		if (value > 0.0) {
+			sum += value * drive_values [model];
+			if (sum_flag) {
+				values [i] [auto_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (wait_field);
+		if (value > 0.0) {
+			sum += value * wait_values [model];
+			if (sum_flag) {
+				values [i] [wait_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (lwait_field);
+		if (value > 0.0) {
+			sum += value * lwait_values [model];
+			if (sum_flag) {
+				values [i] [lwait_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (xwait_field);
+		if (value > 0.0) {
+			sum += value * xwait_values [model];
+			if (sum_flag) {
+				values [i] [xwait_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (tpen_field);
+		if (value > 0.0) {
+			sum += value * tpen_values [model];
+			if (sum_flag) {
+				values [i] [tpen_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (term_field);
+		if (value > 0.0) {
+			sum += value * term_values [model];
+			if (sum_flag) {
+				values [i] [term_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (dist_field);
+		if (value > 0.0) {
+			sum += value * dist_values [model];
+			if (sum_flag) {
+				values [i] [dist_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (cost_field);
+		if (value > 0.0) {
+			sum += value * cost_values [model];
+			if (sum_flag) {
+				values [i] [cost_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (xfer_field);
+		if (value > 0.0) {
+			sum += value * xfer_values [model];
+			if (sum_flag) {
+				values [i] [xfer_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (diff_field);
+		if (value != 0.0) {
+			sum += value * diff_values [model];
+			if (sum_flag) {
+				values [i] [diff_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (user_field);
+		if (value > 0.0) {
+			sum += value * user_values [model];
+			if (sum_flag) {
+				values [i] [user_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (bias_field);
+		if (value != 0.0) {
+			sum += value;
+			if (sum_flag) {
+				values [i] [bias_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (pef_field);
+		if (value > 0.0) {
+			sum += value;
+			if (sum_flag) {
+				values [i] [pef_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (cbd_field);
+		if (value != 0.0) {
+			sum += value;
+			if (sum_flag) {
+				values [i] [cbd_field] = value;
+			}
+		}
+		value = mode_file->Get_Double (const_field);
+
+		if (plan_flag && value == constant [i]) {
+			value = seg_constant [segment] [i] [model];
+		}
+		if (initial_flag && value != 0.0) {
+			seg_constant [seg] [i] [model] = value;
+		}
+		constant [i] = value;
+
+		level = nest_levels [i];
+		mode_sum [i] = sum / level + value;
+
+		if (plan_flag) {
+			mode_plan [i] = mode_file->Get_Integer (plan_field);
+		}
+	}
+
+	//---- apply the splits ----
+
+	if (plan_flag) {
+
+		//---- calculate the mode utilities ----
+
+		utility.assign (num_modes, 0.0);
+
+		for (i = 0; i < num_modes; i++) {
+			sum = mode_sum [i];
+			if (sum > zero_sum) {
+				utility [i] = exp (sum);
+			}
+		}
+
+		//---- calculate the nest sum ----
+
+		nest_sum.assign (num_nests, 0.0);
+
+		for (n = num_nests - 1; n >= 0; n--) {
+			sum = 0;
+			nest = nest_mode [n];
+			nest_ptr = &nested_modes [n];
+
+			for (mode_itr = nest_ptr->begin (); mode_itr != nest_ptr->end (); mode_itr++) {
+				sum += utility [*mode_itr];
+			}
+			nest_sum [n] = sum;
+			if (nest >= 0 && sum > 0) {
+				sum = log (sum) * nest_coef [n] + constant [nest];
+				utility [nest] = exp (sum);
+			}
+		}
+
+		//---- calculate the probabilities ----
+
+		for (n = 0; n < num_nests; n++) {
+			sum = nest_sum [n];
+			if (sum <= 0.0) continue;
+
+			nest = nest_mode [n];
+			nest_ptr = &nested_modes [n];
+
+			if (nest < 0) {
+				value = 1.0 / sum;
+			} else {
+				value = utility [nest] / sum;
+			}
+			for (mode_itr = nest_ptr->begin (); mode_itr != nest_ptr->end (); mode_itr++) {
+				utility [*mode_itr] *= value;
+			}
+		}
+
+		//---- make a choice ----
+
+		sum = 0.0;
+
+		for (i = 0; i < num_modes; i++) {
+			if (mode_nested [i] < 0) {
+				sum += utility [i];
+			}
+		}
+		if (sum > 0.0) {
+			level = random.Probability ();
+			value = 1.0 / sum;
+			sum = 0.0;
+
+			for (i = 0; i < num_modes; i++) {
+				if (mode_nested [i] >= 0) continue;
+
+				sum += utility [i] * value;
+
+				if (level <= sum) {
+					trip_file.Put_Field (choice_field, i + 1);
+
+					if (save_flag) {
+						if (sum_flag) {
+							for (j = 0; j <= const_field; j++) {
+								dvalue = values [i] [j];
+
+								if (mode_value_flag) {
+									value_sum [0] [i] [j] += dvalue;
+								}
+								if (seg_value_flag) {
+									value_sum [segment] [i] [j] += dvalue;
+								}
+							}
+						}
+					}
+					if (summary_flag) {
+						market_seg [0] [i] [model]++;
+						market_seg [0] [i] [num_models]++;
+						market_seg [0] [num_modes] [model]++;
+						market_seg [0] [num_modes] [num_models]++;
+					}
+					if (market_flag && segment > 0) {
+						market_seg [segment] [i] [model]++;
+						market_seg [segment] [i] [num_models]++;
+						market_seg [segment] [num_modes] [model]++;
+						market_seg [segment] [num_modes] [num_models]++;
+					}
+					if (prod_sum_flag) {
+						prod_share [i] [o]++;
+						prod_share [num_modes] [o]++;
+					}
+					if (attr_sum_flag) {
+						attr_share [i] [d]++;
+						attr_share [num_modes] [d]++;
+					}
+
+					//---- identified nested models ----
+
+					mode = i;
+
+					for (n = num_nests - 1; n >= 0; n--) {
+						nest = -1;
+						nest_ptr = &nested_modes [n];
+
+						for (mode_itr = nest_ptr->begin (); mode_itr != nest_ptr->end (); mode_itr++) {
+							if (*mode_itr == mode) {
+								nest = nest_mode [n];
+								break;
+							}
+						}
+						if (nest >= 0) {
+							if (summary_flag) {
+								market_seg [0] [nest] [model]++;
+								market_seg [0] [nest] [num_models]++;
+							}
+							if (market_flag && segment > 0) {
+								market_seg [segment] [nest] [model]++;
+								market_seg [segment] [nest] [num_models]++;
+							}
+							if (prod_sum_flag) {
+								prod_share [nest] [o]++;
+							}
+							if (attr_sum_flag) {
+								attr_share [nest] [d]++;
+							}
+							mode = nest;
+						}
+					}
+					return (mode_plan [i]);
+				}
+			}
+		}
+
+	} else {
+
+		//---- split to each access market ----
+
+		sum_trips = 0;
+		can_walk_market = can_walk_share = must_drive_market = must_drive_share = auto_exp = 0.0;
+
+		for (j = 0; j < num_access; j++) {
+			access = trips * table_file->Get_Double (market_field + j);
+
+			if (access == 0.0) continue;
+
+			if (save_summit_flag) {
+				group = market_group [j];
+				if (group == 1) {
+					can_walk_market += access;
+				} else if (group == 2) {
+					must_drive_market += access;
+				}
+			}
+
+			//---- calculate the mode utilities ----
+
+			utility.assign (num_modes, 0.0);
+			market_ptr = &access_markets [j];
+
+			for (mode_itr = market_ptr->begin (); mode_itr != market_ptr->end (); mode_itr++) {
+				sum = mode_sum [*mode_itr];
+				if (sum <= zero_sum) continue;
+
+				utility [*mode_itr] = exp (sum);
+			}
+
+			//---- calculate the nest sum ----
+
+			nest_sum.assign (num_nests, 0.0);
+
+			for (n = num_nests - 1; n >= 0; n--) {
+				sum = 0;
+				nest = nest_mode [n];
+				nest_ptr = &nested_modes [n];
+
+				for (mode_itr = nest_ptr->begin (); mode_itr != nest_ptr->end (); mode_itr++) {
+					sum += utility [*mode_itr];
+				}
+				nest_sum [n] = sum;
+				if (nest >= 0 && sum > 0) {
+
+					sum = log (sum) * nest_coef [n] + constant [nest];
+					utility [nest] = exp (sum);
+				}
+			}
+			auto_exp = utility [0];
+
+			//---- calculate the probabilities ----
+
+			for (n = 0; n < num_nests; n++) {
+				sum = nest_sum [n];
+				if (sum <= 0.0) continue;
+
+				nest = nest_mode [n];
+				nest_ptr = &nested_modes [n];
+
+				if (nest < 0) {
+					sum = access / sum;
+				} else {
+					sum = utility [nest] / sum;
+				}
+
+				for (mode_itr = nest_ptr->begin (); mode_itr != nest_ptr->end (); mode_itr++) {
+					value = utility [*mode_itr] *= sum;
+
+					if (save_flag) {
+						table = output_table [*mode_itr] [model];
+
+						if (table >= 0) {
+							new_table_file->Add_Cell_Index (d, table, (value * trip_factor));
+							sum_trips += value;
+						}
+						if (sum_flag) {
+							for (i = 0; i <= const_field; i++) {
+								dvalue = values [*mode_itr] [i] * value;
+
+								if (mode_value_flag) {
+									value_sum [0] [*mode_itr] [i] += dvalue;
+								}
+								if (seg_value_flag) {
+									value_sum [segment] [*mode_itr] [i] += dvalue;
+								}
+							}
+						}
+					}
+					if (summary_flag) {
+						market_seg [0] [*mode_itr] [model] += value;
+						market_seg [0] [*mode_itr] [num_models] += value;
+					}
+					if (market_flag && segment > 0) {
+						market_seg [segment] [*mode_itr] [model] += value;
+						market_seg [segment] [*mode_itr] [num_models] += value;
+					}
+					if (save_summit_flag && nest < 0 && *mode_itr == 1 && group > 0) {
+						if (group == 1) {
+							can_walk_share += value;
+						} else if (group == 2) {
+							must_drive_share += value;
+						}
+					}
+					if (prod_sum_flag) {
+						prod_share [*mode_itr] [o] += value;
+					}
+					if (attr_sum_flag) {
+						attr_share [*mode_itr] [d] += value;
+					}
+					if (save_access_flag) {
+						access_sum [j] [*mode_itr] [model] += value;
+						access_sum [j] [*mode_itr] [num_models] += value;
+					}
+				}
+			}
+
+			//---- store total trips ----
+
+			if (summary_flag) {
+				market_seg [0] [num_modes] [i] += access;
+				market_seg [0] [num_modes] [num_models] += access;
+			}
+			if (market_flag && segment > 0) {
+				market_seg [segment] [num_modes] [i] += access;
+				market_seg [segment] [num_modes] [num_models] += access;
+			}
+			if (prod_sum_flag) {
+				prod_share [num_modes] [o] += access;
+			}
+			if (attr_sum_flag) {
+				attr_share [num_modes] [d] += access;
+			}
+			if (save_access_flag) {
+				access_sum [j] [num_modes] [i] += access;
+				access_sum [j] [num_modes] [num_models] += access;
+			}
+		}
+
+		//----write the summit record----
+
+		if (save_summit_flag) {
+			summit_file.Put_Field (summit_org, org);
+			summit_file.Put_Field (summit_des, des);
+			summit_file.Put_Field (summit_market, i + 1);
+			summit_file.Put_Field (summit_total_trips, trips);
+			summit_file.Put_Field (summit_motor_trips, trips);
+			summit_file.Put_Field (summit_auto_exp, auto_exp);
+
+			if (can_walk_market <= 0.0) {
+				can_walk_market = can_walk_share = 0.0;
+			} else {
+				can_walk_share /= can_walk_market;
+				can_walk_market /= trips;
+			}
+			summit_file.Put_Field (summit_walk_market, can_walk_market);
+			summit_file.Put_Field (summit_walk_share, can_walk_share);
+
+			if (must_drive_market <= 0.0) {
+				must_drive_market = must_drive_share = 0.0;
+			} else {
+				must_drive_share /= must_drive_market;
+				must_drive_market /= trips;
+			}
+			summit_file.Put_Field (summit_drive_market, must_drive_market);
+			summit_file.Put_Field (summit_drive_share, must_drive_share);
+
+			summit_file.Write (true);
+		}
+
+		if (lost_flag && save_flag) {
+			dvalue = fabs (trips - sum_trips);
+
+			if (dvalue > 0.5) {
+				Print (1, String ("Origin=%d, Destination=%d, Table=%d, Input Trips=%.1lf, Output Trips=%.1lf")
+					% org % des % (i + 1) % trips % sum_trips);
+			}
+			if (dvalue > 0.0) {
+				tot_lost += dvalue;
+			}
+		}
+	}
+	return (0);
+}

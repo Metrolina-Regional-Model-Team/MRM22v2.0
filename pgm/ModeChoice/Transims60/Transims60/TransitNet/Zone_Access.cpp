@@ -1,0 +1,191 @@
+//*********************************************************
+//	Zone_Access.cpp - Connect Zones to Stations
+//*********************************************************
+
+#include "TransitNet.hpp"
+
+//---------------------------------------------------------
+//	Parking_Access
+//---------------------------------------------------------
+
+void TransitNet::Zone_Access (void)
+{
+	int i, zone_access, speed, count, stop, zone, best [2];
+	double dx, dy, distance, best_dist [2], best_diff, diff;
+	Dtime time;
+	String notes;
+
+	Int_Map_Itr map_itr;
+	Link_Data *link_ptr;
+	Access_Data access_rec;
+	Node_Data *node_ptr;
+	Stop_Data *stop_ptr;
+	Zone_Data *zone_ptr;
+	Point_Map_Itr pt_itr;
+	Location_Itr loc_itr;
+	Int_Set node_list;
+	Int_Set_Itr int_itr;
+	Node_Itr node_itr;
+	Zone_Itr zone_itr;
+	Link_Itr link_itr;
+
+	//---- assign nodes to zones ----
+
+	for (node_itr = node_array.begin (); node_itr != node_array.end (); node_itr++) {
+		best_diff = 0.0;
+		zone = -1;
+
+		for (i = 0, zone_itr = zone_array.begin (); zone_itr != zone_array.end (); zone_itr++, i++) {
+			dx = zone_itr->X () - node_itr->X ();
+			dy = zone_itr->Y () - node_itr->Y ();
+
+			diff = sqrt (dx * dx + dy * dy);
+
+			if (zone < 0 || diff < best_diff) {
+				zone = i;
+				best_diff = diff;
+			}
+		}
+		node_itr->Control (zone);
+	}
+
+	//---- process the zone station records ----
+
+	Show_Message (String ("Reading %s -- Record") % zone_stop_file.File_Type ());
+	Set_Progress ();
+
+	count = 0;
+	zone_access = 0;
+	speed = (int) Internal_Units (3.0, MPH);
+
+	while (zone_stop_file.Read ()) {
+		Show_Progress ();
+
+		zone = zone_stop_file.Get_Integer (zone_fld);
+		stop = zone_stop_file.Get_Integer (stop_fld);
+
+		if (stop <= 0) continue;
+		count++;
+
+		//---- get the zone record ----
+
+		map_itr = zone_map.find (zone);
+
+		if (map_itr == zone_map.end ()) {
+			Warning (String ("Zone %d was Not Found in the Zone file") % zone);
+			continue;
+		}
+		zone = map_itr->second;
+		zone_ptr = &zone_array [zone];
+
+		//---- get the stop record ----
+
+		map_itr = stop_map.find (stop);
+
+		if (map_itr == stop_map.end ()) {
+			Warning (String ("Stop %d was Not Found in the Stop File") % stop);
+			continue;
+		}
+		pt_itr = stop_pt.find (stop);
+
+		if (pt_itr == stop_pt.end ()) {
+			Warning (String ("Stop %d coordinates were Not Found") % stop);
+			continue;
+		}
+		stop = map_itr->second;
+		stop_ptr = &stop_array [stop];
+
+		//---- search for activity locations within the zone ----
+
+		node_list.clear ();
+
+		for (loc_itr = location_array.begin (); loc_itr != location_array.end (); loc_itr++) {
+			if (loc_itr->Zone () != zone) continue;
+
+			link_ptr = &link_array [loc_itr->Link ()];
+
+			node_list.insert (link_ptr->Anode ());
+			node_list.insert (link_ptr->Bnode ());
+		}
+
+		//---- search for walk link with node in the zone ----
+
+		for (link_itr = link_array.begin (); link_itr != link_array.end (); link_itr++) {
+			if (Use_Permission (link_itr->Use (), WALK)) {
+				node_ptr = &node_array [link_itr->Anode ()];
+				if (node_ptr->Control () == zone) {
+					node_list.insert (link_itr->Anode ());
+				}
+				node_ptr = &node_array [link_itr->Bnode ()];
+				if (node_ptr->Control () == zone) {
+					node_list.insert (link_itr->Bnode ());
+				}
+			}
+		}
+
+		//----- find the best connections for each zone -----
+
+		best [0] = best [1] = -1;
+
+		for (int_itr = node_list.begin (); int_itr != node_list.end (); int_itr++) {
+			node_ptr = &node_array [*int_itr];
+
+			dx = pt_itr->second.x - UnRound (node_ptr->X ());
+			dy = pt_itr->second.y - UnRound (node_ptr->Y ());
+
+			distance = sqrt (dx * dx + dy * dy);
+
+			if (best [0] >= 0) {
+				if (distance < best_dist [0]) {
+					best [1] = best [0];
+					best_dist [1] = best_dist [0];
+					best [0] = *int_itr;
+					best_dist [0] = distance;
+				} else if (best [1] >= 0) {
+					if (distance < best_dist [1]) {
+						best [1] = *int_itr;
+						best_dist [1] = distance;
+					}
+				} else {
+					best [1] = *int_itr;
+					best_dist [1] = distance;
+				}
+			} else {
+				best [0] = *int_itr;
+				best_dist [0] = distance;
+			}
+		}
+
+		for (i=0; i < 2; i++) {
+			if (best [i] < 0) {
+				if (i == 0) {
+					Warning ("Access Points were Not Found for Zone ") << zone_ptr->Zone ();
+				}
+				continue;
+			}
+			distance = best_dist [i];
+			time.Seconds (Round (distance) / speed);
+
+			access_rec.Link (++max_access);
+			access_rec.From_Type (NODE_ID);
+			access_rec.From_ID (best [i]);
+			access_rec.To_Type (STOP_ID);
+			access_rec.To_ID (stop);
+			access_rec.Dir (2);
+			access_rec.Time (time);
+			access_rec.Cost (0);
+			access_rec.Notes ("Zone Access");
+
+			access_map.insert (Int_Map_Data (access_rec.Link (), (int) access_array.size ()));
+			access_array.push_back (access_rec);
+			zone_access++;
+			naccess++;
+		}
+	}
+	End_Progress ();
+
+	Print (2, "Number of Zone Stop Records = ") << count;
+	Print (1, "Number of Zone Access Links = ") << zone_access;
+
+	zone_stop_file.Close ();
+}

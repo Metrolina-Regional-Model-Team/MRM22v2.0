@@ -1,0 +1,18 @@
+//*********************************************************
+//	Control.cpp - process the control parameters
+//*********************************************************
+
+#include "Simulator.hpp"
+
+//---------------------------------------------------------
+//	Program_Control
+//---------------------------------------------------------
+
+void Simulator::Program_Control (void)
+{
+	String key;
+
+	Simulator_Service::Program_Control ();
+
+	Print (2, String ("%s Control Keys:") % Program ());
+}

@@ -1,0 +1,6 @@
+﻿1>------ Build started: Project: Router_Service, Configuration: Bin Win32 ------
+1>  Transit_Plan.cpp
+1>  Router_Service.vcxproj -> C:\Software\Transims60\Router_Service\Win32\Bin\Router_Service.lib
+2>------ Build started: Project: Router, Configuration: Bin Win32 ------
+2>  Router.vcxproj -> C:\Software\Transims60\Win32\Bin\Router.exe
+========== Build: 2 succeeded, 0 failed, 3 up-to-date, 0 skipped ==========

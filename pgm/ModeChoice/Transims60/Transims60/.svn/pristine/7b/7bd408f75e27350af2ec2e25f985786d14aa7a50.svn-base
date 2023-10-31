@@ -1,0 +1,58 @@
+//*********************************************************
+//	Plan_Processor.hpp - path builder thread manager
+//*********************************************************
+
+#ifndef PLAN_PROCESSOR_HPP
+#define PLAN_PROCESSOR_HPP
+
+#include "Router_Service.hpp"
+#include "Path_Builder.hpp"
+
+//---------------------------------------------------------
+//	Plan_Processor - builds/updates plan data
+//---------------------------------------------------------
+
+class SYSLIB_API Plan_Processor
+{
+public:
+	Plan_Processor (Router_Service *exe = 0) { Initialize (exe); }
+	~Plan_Processor (void);
+
+	void   Initialize (Router_Service *_exe);
+	void   Start_Processing (bool update_times = false, bool zero_flows = false);
+	void   Plan_Build (Plan_Ptr_Array *ptr);
+	void   Stop_Processing (bool save_flows = false);
+	void   Save_Flows (void);
+	int    Num_Threads (void)           { return (num_threads); }
+
+private:
+	Router_Service  *exe;
+	int num_threads, num_builders;
+
+#ifdef THREADS
+	Threads threads;
+	Plan_Ptr_Queue *plan_ptr_queue;
+	Plan_Queue *plan_queue;
+	Path_Builder **path_builder;
+
+	//---------------------------------------------------------
+	//	Save_Results - process the path building results
+	//---------------------------------------------------------
+
+	class Save_Results
+	{
+	public:
+		Save_Results (Plan_Processor *ptr = 0)   { Initialize (ptr); }
+
+		void Initialize (Plan_Processor *_ptr)   { ptr = _ptr; }
+
+		void operator()();
+
+		Plan_Processor *ptr;
+	} save_results;
+
+#else
+	Path_Builder path_builder;
+#endif
+};
+#endif

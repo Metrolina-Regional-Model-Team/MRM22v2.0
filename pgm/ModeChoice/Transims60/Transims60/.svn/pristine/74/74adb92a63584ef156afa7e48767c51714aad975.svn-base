@@ -1,0 +1,194 @@
+//*********************************************************
+//	Link_Fields.cpp - process link fields
+//*********************************************************
+
+#include "VissimNet.hpp"
+
+#include <math.h>
+
+//---------------------------------------------------------
+//	Link_Fields
+//---------------------------------------------------------
+
+bool VissimNet::Link_Fields (void)
+{
+	int link, dir, size;
+	bool first;
+
+	double dx, dy, len;
+	String lane, data;
+
+	XYZ pt;
+	XYZ_Itr pt_itr;
+	XYZ_Point point;
+	Points_Itr pts_itr;
+
+	Int_Map_Itr map_itr;
+	Link_Itr link_itr;
+
+	if (pair_itr->first.Equals ("<link")) {
+		if (link_flag) Warning ("Link Block was Not Terminated");
+		link_flag = !pair_itr->second.Equals ("/>");
+		link_data.Clear ();
+		dir_data.Clear ();
+		shape_data.Clear ();
+		points.clear ();
+
+		for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+			if (pair_itr->first.Equals ("name")) {
+				link_data.Name (pair_itr->second);
+			} else if (pair_itr->first.Equals ("no")) {
+				data = pair_itr->second;
+				if (data.length () > 10) {
+					data = data.substr (data.length () - 10);
+				}
+				if (data.length () == 10 &&  data [0] > '1') data [0] = '1';
+				link_data.Link (data.Integer ());
+			} else if (pair_itr->first.Equals ("linkBehavType")) {
+				link_data.Area_Type (pair_itr->second.Integer ());
+			}
+		}
+		link_data.Anode (-1);
+		link_data.Bnode (-1);
+		link_data.Length (0);
+		link_data.Type (MAJOR);
+		dir_data.Lanes (0);
+		return (true);
+	} else if (pair_itr->first.Equals ("</link")) {
+		if (!link_flag) Warning ("Link Block was Not Initialized");
+		link_flag = false;
+
+		if (points.size () > 1) {
+			len = 0;
+			first = true;
+
+			for (pts_itr = points.begin (); pts_itr != points.end (); pts_itr++) {
+				if (first) {
+					first = false;
+				} else {
+					dx = pts_itr->x - point.x;
+					dy = pts_itr->y - point.y;
+					len += sqrt (dx * dx + dy * dy);
+				}
+				point = *pts_itr;
+				pt.x = Round (point.x);
+				pt.y = Round (point.y);
+				pt.z = Round (point.z);
+
+				shape_data.push_back (pt);
+			}
+			link_data.Length (Round (len));
+		}
+		link = (int) link_array.size ();
+		dir_data.Link (link);
+		dir_data.Dir (0);
+
+		dir = (int) dir_array.size ();
+
+		link_data.AB_Dir (dir);
+
+		if (shape_data.size () > 0) {
+			size = (int) shape_array.size ();
+			link_data.Shape (size);
+
+			shape_data.Link (link_data.Link ());
+			if (shape_map.insert (Int_Map_Data (shape_data.Link (), size)).second) {
+				shape_array.push_back (shape_data);
+			}
+		}
+		if (link_map.insert (Int_Map_Data (link_data.Link (), link)).second) {
+			link_array.push_back (link_data);
+		}
+		if (dir_map.insert (Int_Map_Data (dir_data.Link_Dir (), dir)).second) {
+			dir_array.push_back (dir_data);
+		}
+	}
+
+	if (link_flag) {
+		if (pair_itr->first.Equals ("<lanes")) {
+			if (lanes_flag) Warning ("Lanes Block was Not Terminated");
+			lanes_flag = true;
+		} else if (pair_itr->first.Equals ("</lanes")) {
+			if (!lanes_flag) Warning ("Lanes Block was Not Initialized");
+			lanes_flag = false;
+		} else if (pair_itr->first.Equals ("<geometry")) {
+			if (geo_flag) Warning ("Geometry Block was Not Terminated");
+			geo_flag = true;
+		} else if (pair_itr->first.Equals ("</geometry")) {
+			if (!geo_flag) Warning ("Geometry Block was Not Initialized");
+			geo_flag = false;
+		} else if (pair_itr->first.Equals ("<FromLinkEndPt")) {
+			for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+				if (pair_itr->first.Equals ("lane")) {
+					lane = pair_itr->second;
+					lane.Split (data, " ");
+					ab_key.first = data.Integer () * 10 + lane.Integer ();
+					break;
+				}
+			}
+			return (true);
+		} else if (pair_itr->first.Equals ("<ToLinkEndPt")) {
+			for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+				if (pair_itr->first.Equals ("lane")) {
+					lane = pair_itr->second;
+					lane.Split (data, " ");
+					ab_key.second = data.Integer () * 10 + lane.Integer ();
+					break;
+				}
+			}
+			if (!ab_map.insert (Int2_Map_Data (ab_key, link_data.Link ())).second) {
+				Warning (String ("Duplicate From-To Key = %d-%d") % ab_key.first % ab_key.second);
+			}
+			if (!connect.insert (Int_Key_Map_Data (link_data.Link (), ab_key)).second) {
+				Warning (String ("Duplicate From-To Connection, Link=%d (%d-%d)") % link_data.Link () % ab_key.first % ab_key.second);
+			}
+			return (true);
+		}
+		if (lanes_flag) {
+			if (pair_itr->first.Equals ("<lane")) {
+				if (lane_flag) Warning ("Lane Block was Not Terminated");
+				lane_flag = !pair_itr->second.Equals ("/>");
+				dir_data.Lanes (dir_data.Lanes () + 1);
+			} else if (pair_itr->first.Equals ("</lane")) {
+				//if (!lane_flag) Warning ("Lane Block was Not Initialized");
+				lane_flag = false;
+			}
+		}
+		if (geo_flag) {
+			if (pair_itr->first.Equals ("<points") || pair_itr->first.Equals ("<points2D") || pair_itr->first.Equals ("<points3D")) {
+				if (points_flag) Warning ("Points Block was Not Terminated");
+				points_flag = true;
+			} else if (pair_itr->first.Equals ("</points") || pair_itr->first.Equals ("</points2D") || pair_itr->first.Equals ("</points3D")) {
+				if (!points_flag) Warning ("Points Block was Not Initialized");
+				points_flag = false;
+			}
+			if (points_flag) {
+				if (pair_itr->first.Equals ("<point") || pair_itr->first.Equals ("<point2D") || pair_itr->first.Equals ("<point3D")) {
+					if (point_flag) Warning ("Lane Block was Not Terminated");
+					point_flag = !pair_itr->second.Equals ("/>");
+
+					for (++pair_itr; pair_itr != string_pairs.end (); pair_itr++) {
+						if (pair_itr->first.Equals ("x")) {
+							point.x = pair_itr->second.Double ();
+						} else if (pair_itr->first.Equals ("y")) {
+							point.y = pair_itr->second.Double ();
+						} else if (pair_itr->first.Equals ("z")) {
+							point.z = pair_itr->second.Double ();
+						} else if (pair_itr->first.Equals ("zOffset")) {
+							point.z = pair_itr->second.Double ();
+						}
+					}
+					if (!point_flag) {
+						points.push_back (point);
+					}
+					return (true);
+				} else if (pair_itr->first.Equals ("</point") || pair_itr->first.Equals ("</point2D") || pair_itr->first.Equals ("</point3D")) {
+					if (!point_flag) Warning ("Lane Block was Not Initialized");
+					point_flag = false;
+					points.push_back (point);
+				}
+			}
+		}
+	}
+	return (false);
+} 

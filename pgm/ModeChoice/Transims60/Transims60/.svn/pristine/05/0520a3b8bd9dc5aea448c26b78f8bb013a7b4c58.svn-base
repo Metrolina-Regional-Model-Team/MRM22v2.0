@@ -1,0 +1,165 @@
+//*********************************************************
+//	ModeChoice.hpp - mode choice processing
+//*********************************************************
+
+#ifndef MODECHOICE_HPP
+#define MODECHOICE_HPP
+
+#include "Data_Service.hpp"
+#include "Select_Service.hpp"
+#include "Db_Matrix.hpp"
+#include "Db_Header.hpp"
+#include "Db_Array.hpp"
+#include "TypeDefs.hpp"
+#include "User_Program.hpp"
+#include "Data_Queue.hpp"
+#include "Plan_Skim_File.hpp"
+#include "Trip_Index.hpp"
+#include "Partition_Files.hpp"
+
+#include <vector>
+using namespace std;
+
+//---------------------------------------------------------
+//	ModeChoice - execution class definition
+//---------------------------------------------------------
+
+class SYSLIB_API ModeChoice : public Data_Service, public Select_Service
+{
+public:
+	ModeChoice (void);
+	virtual ~ModeChoice (void);
+
+	virtual void Execute (void);
+
+protected:
+	enum ModeChoice_Keys { 
+		PLAN_FILE = 1, PLAN_FORMAT, PLAN_SKIM_FILE, PLAN_SKIM_FORMAT, 
+		TOUR_MODE_CHOICE, NEW_PLAN_SKIM_FILE, NEW_PLAN_SKIM_FORMAT,
+
+		TRIP_TABLE_FILE, TRIP_TABLE_FORMAT, SELECT_TRIP_TABLES,
+		NEW_TRIP_TABLE_FILE, NEW_TRIP_TABLE_FORMAT, SKIM_FILE, SKIM_FORMAT, 
+
+		MODE_CONSTANT_FILE, MODE_CONSTANT_FORMAT, MODE_BIAS_FILE, MODE_BIAS_FORMAT,
+		SEGMENT_MAP_FILE, SEGMENT_MAP_FORMAT, ORIGIN_MAP_FIELD, DESTINATION_MAP_FIELD,
+		MODE_CHOICE_SCRIPT, PRIMARY_MODE_CHOICE, MODE_CHOICE_NEST, NESTING_COEFFICIENT, 
+
+		MODEL_NAMES, IMPEDANCE_VALUES,VEHICLE_TIME_VALUES, WALK_TIME_VALUES, 
+		DRIVE_ACCESS_VALUES, WAIT_TIME_VALUES, LONG_WAIT_VALUES, TRANSFER_TIME_VALUES, 
+		PENALTY_TIME_VALUES, TERMINAL_TIME_VALUES, DISTANCE_VALUES, COST_VALUES, 
+		TRANSFER_COUNT_VALUES, DIFFERENCE_VALUES, USER_VALUES, 
+
+		MODE_ACCESS_MARKET, ACCESS_MARKET_NAME, 
+		NEW_TABLE_MODES, OUTPUT_TRIP_FACTOR, NEW_MODE_SUMMARY_FILE,
+		NEW_MARKET_SEGMENT_FILE, NEW_MODE_SEGMENT_FILE, 
+		NEW_FTA_SUMMIT_FILE, TRIP_PURPOSE_LABEL, TRIP_PURPOSE_NUMBER, TRIP_TIME_PERIOD,
+		NEW_PRODUCTION_FILE, NEW_PRODUCTION_FORMAT, NEW_ATTRACTION_FILE, NEW_ATTRACTION_FORMAT,
+
+		CALIBRATION_TARGET_FILE, CALIBRATION_TARGET_FORMAT, CALIBRATION_SCALING_FACTOR, 
+		MAX_CALIBRATION_ITERATIONS, ADJUST_FIRST_MODE_CONSTANTS, CALIBRATION_EXIT_RMSE, 
+		PLAN_SKIMS_IN_MEMORY, REPORT_AFTER_ITERATIONS, NEW_MODE_CONSTANT_FILE, NEW_MODE_CONSTANT_FORMAT, 
+		NEW_CALIBRATION_DATA_FILE
+	};
+	virtual void Program_Control (void);
+	virtual void Page_Header (void);
+	virtual bool Get_Zone_Data (Zone_File &file, Zone_Data &data);
+
+private:
+	enum ModeChoice_Reports { PRINT_SCRIPT = 1, PRINT_STACK, MODE_SUMMARY, MARKET_REPORT, 
+		CALIB_REPORT, TARGET_DATA, MODE_VALUES, SEGMENT_VALUES, ACCESS_MARKET, LOST_TRIPS 
+	};
+
+	int period, purpose, period_field, purpose_field, key_mode;
+	int iteration, model_num, num_modes, num_models, num_nests, num_access, num_market, header_value, max_iter, max_plan, first_model;
+	int org_map_field, des_map_field, segment_field, zone_field, zones, market_field, model_field;
+	int imp_field, time_field, walk_field, auto_field, wait_field, lwait_field, xwait_field, tpen_field, term_field, diff_field;
+	int dist_field, cost_field, xfer_field, bias_field, pef_field, cbd_field, const_field, user_field, plan_field;
+	double scale_fac, exit_rmse, trip_factor;
+	bool summary_flag, market_flag, segment_flag, constant_flag, mode_value_flag, seg_value_flag, skim_memory_flag, tour_choice_flag;
+	bool calib_flag, calib_seg_flag, calib_model_flag, calib_report, new_calib_flag, data_flag, mode_seg_flag, bias_flag;
+	bool summit_flag, prod_flag, attr_flag, access_flag, lost_flag, plan_flag, plan_skim_flag, new_skim_flag, first_mode_flag;
+	bool org_flag, initial_flag, sum_flag, prod_sum_flag, attr_sum_flag, save_summit_flag, save_flag, save_iter_flag, iter_save_flag;
+	bool memory_flag, new_plan_flag;
+
+	Doubles imp_values, time_values, walk_values, drive_values, wait_values, lwait_values, xwait_values, tpen_values;
+	Doubles term_values, diff_values, dist_values, xfer_values, cost_values, user_values, zero_values, zero_types;
+
+	Dbls_Array min_const, max_const;
+	Strings mode_names, access_names, model_names, table_names;
+	Str_ID mode_id;
+
+	Data_Range save_iter_range;
+	Int2_Map segment_map;
+	Ints_Array access_markets, nested_modes, output_table;
+	Integers nest_mode, mode_nest, mode_nested;
+	Doubles nest_levels, nest_coef;
+	Integers market_group, table_map;
+	Int_Map plan_num_map;
+	Trip_Index_Array index_array;
+
+	Db_Matrix *table_file, *new_table_file;
+	Db_Matrices skim_files;
+
+	Trip_File trip_file;
+	Plan_File_Array plan_files;
+	Plan_Skim_Files plan_skims, plan_skim_files, index_skims;
+	Plan_Skim_File new_plan_skim;
+	Plan_Skim_Data_Arrays plan_skim_arrays;
+
+	Db_Header segment_file, target_file, constant_file, calib_file, prod_file, attr_file, bias_file;
+	Db_File script_file, summary_file, market_file, data_file, mode_seg_file;
+
+	Db_Header summit_file;
+	int summit_org, summit_des,summit_market, summit_total_trips, summit_motor_trips, summit_auto_exp;
+	int summit_walk_market, summit_walk_share, summit_drive_market, summit_drive_share;
+
+	Db_Sort_Array org_db, des_db;
+	Db_Base_Array data_rec;
+
+	User_Program program;
+
+	//---- plan tour array ----
+
+	typedef vector <Plan_Array>        Plan_Tour_Array;
+	typedef Plan_Tour_Array::iterator  Plan_Tour_Itr;
+	typedef Plan_Tour_Array::pointer   Plan_Tour_Ptr;
+
+	//---- market segment summaries ----
+
+	typedef vector <Dbls_Array>    Market_Seg;
+	typedef Market_Seg::iterator   Mrkt_Seg_Itr;
+
+	Market_Seg market_seg, seg_constant, seg_bias, calib_target, calib_trips, calib_const, value_sum, access_sum;
+
+	//---- zone summaries ----
+
+	Dbls_Array prod_share, attr_share;
+
+	//---- methods ----
+
+	void Compile_Script (void);
+	void Read_Constants (void);
+	void Read_Mode_Bias (void);
+	void Segment_Map (void);
+	void Read_Targets (void);
+	void Target_Header (void);
+	void Read_Plans (void);
+	void Read_Plan_Skims (void);
+	void Zone_Tables (void);
+	int  Choice_Data (Trip_Index trip_index);
+	int  Mode_Splits (int model, int segment, int seg, int o, int d, int org, int des);
+	void Choice_Process (void);
+	bool Adjust_Constants (void);
+	void Calib_Header (void);
+	void Mode_Summary (int segment = 0);
+	void Mode_Header (void);
+	void Value_Summary (int segment = 0);
+	void Value_Header (void);
+	void Write_Summary (void);
+	void Write_Market (void);
+	void Write_Mode_Segment (void);
+	void Write_Zones (void);
+	void Access_Summary (void);
+	void Access_Header (void);
+};
+#endif
