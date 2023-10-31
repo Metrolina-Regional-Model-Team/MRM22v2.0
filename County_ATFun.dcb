@@ -1,0 +1,14 @@
+
+112
+"CATFUN",I,1,4,0,12,0,,,"",,Blank,
+"STCNTY",I,5,4,0,10,0,,,"",,Blank,
+"ATYPE",I,9,4,0,10,0,,,"",,Blank,
+"FUNCL",I,13,4,0,10,0,,,"",,Blank,
+"CntyName",C,17,20,0,20,0,,,"",,Blank,
+"ATName",C,37,20,0,20,0,,,"",,Blank,
+"FunName",C,57,20,0,20,0,,,"",,Blank,
+"CATFUN2",I,77,4,0,12,0,,,"",,Blank,
+"AT2",I,81,4,0,10,0,,,"",,Blank,
+"Fun2",I,85,4,0,10,0,,,"",,Blank,
+"ATName2",C,89,12,0,12,0,,,"",,Blank,
+"FunName2",C,101,12,0,12,0,,,"",,Blank,
