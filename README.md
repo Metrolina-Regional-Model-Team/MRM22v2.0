@@ -8,5 +8,5 @@ User's Guide:
 
 Model team members: CDOT, NCDOT, SCDOT
 
-Regional partnerns: CATS, CRMPO, CRTPO, GCLMPO, RFATS, RRRPO
+Regional partners: CATS, CRMPO, CRTPO, GCLMPO, RFATS, RRRPO
 
